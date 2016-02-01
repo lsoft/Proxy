@@ -1,0 +1,120 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{74D63352-1B49-44E8-ABDF-418AC5338643}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ProxyGenerator.Tests</RootNamespace>
+    <AssemblyName>ProxyGenerator.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+    <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\$(VisualStudioVersion)\UITestExtensionPackages</ReferencePath>
+    <IsCodedUITest>False</IsCodedUITest>
+    <TestProjectType>UnitTest</TestProjectType>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+  </ItemGroup>
+  <Choose>
+    <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
+      <ItemGroup>
+        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ProxyGeneratorTests\Hierarchy\HierarchyInterface1Fixture.cs" />
+    <Compile Include="ProxyGeneratorTests\GenericFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\Generic\Parameters\GenericParameter0Fixture.cs" />
+    <Compile Include="ProxyGeneratorTests\Generic\Parameters\GenericParameter1Fixture.cs" />
+    <Compile Include="ProxyGeneratorTests\Generic\Parameters\GenericReturnFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\Generic\Parameters\GenericParameterAndReturnFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\Generic\Parameters\RefOutGenericHardcoreFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\Generic\TargetClassInterface\TargetClassAndInterfaceGenericHardcoreFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\Generic\TargetClass\TargetClassGenericOneParameterFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\Generic\TargetClass\TargetClassGenericTwoParametersFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\Generic\TargetInterface\TargetInterfaceGenericFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\InterfaceImplementation\II2Fixture.cs" />
+    <Compile Include="ProxyGeneratorTests\InterfaceImplementation\II1Fixture.cs" />
+    <Compile Include="ProxyGeneratorTests\InterfaceImplementation\II0Fixture.cs" />
+    <Compile Include="ProxyGeneratorTests\MockPayload.cs" />
+    <Compile Include="ProxyGeneratorTests\MockPayloadFactory.cs" />
+    <Compile Include="ProxyGeneratorTests\TestWrapWithProxyAttribute.cs" />
+    <Compile Include="ProxyGeneratorTests\NaiveFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\DerivativeInterfacesFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\TwoConstructorsFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\ConstructorArgumentsFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\WithPropertiesFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\Hierarchy\HierarchyInterface0Fixture.cs" />
+    <Compile Include="ProxyGeneratorTests\NestedClassFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\RefStructFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\OutStructFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\OutClassFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\RefClassFixture.cs" />
+    <Compile Include="ProxyGeneratorTests\NestedNestedClass0Fixture.cs" />
+    <Compile Include="ProxyGeneratorTests\NestedNestedClass1Fixture.cs" />
+    <Compile Include="ProxyGeneratorTests\VariantsFixture.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ProxyGenerator\ProxyGenerator.csproj">
+      <Project>{3397236c-17e3-44c9-9587-be809ebbb153}</Project>
+      <Name>ProxyGenerator</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Choose>
+    <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
+      <ItemGroup>
+        <Reference Include="Microsoft.VisualStudio.QualityTools.CodedUITestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="Microsoft.VisualStudio.TestTools.UITest.Common, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="Microsoft.VisualStudio.TestTools.UITest.Extension, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="Microsoft.VisualStudio.TestTools.UITesting, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
