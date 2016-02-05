@@ -67,6 +67,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                     transaction,
                     _connection,
                     _md5,
+                    _databaseName,
                     _tableName
                     );
 
@@ -186,13 +187,12 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
 
             _output("PerformanceTelemetry Before DeleteOldClause");
 
-            var deleteOldClause = DeleteOldClause.Replace("{_DatabaseName_}", _databaseName);
-            deleteOldClause = deleteOldClause.Replace("{_TableName_}", _tableName);
-            deleteOldClause = deleteOldClause.Replace("{_Barrier_}", DateTime.Now.AddMonths(-1).ToString("yyyyMMdd"));
-            using (var cmd = new SqlCommand(deleteOldClause, _connection))
-            {
-                cmd.ExecuteNonQuery();
-            }
+            DoCleanup(
+                _connection,
+                null,
+                _databaseName,
+                _tableName
+                );
 
             _output("PerformanceTelemetry Before ReadStackTableClause");
 
@@ -213,6 +213,37 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             }
 
             _output("PerformanceTelemetry After preparation");
+        }
+
+        internal static void DoCleanup(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            string databaseName,
+            string tableName
+            )
+        {
+            if (connection == null)
+            {
+                throw new ArgumentNullException("connection");
+            }
+            //transaction allowed to be null
+            if (databaseName == null)
+            {
+                throw new ArgumentNullException("databaseName");
+            }
+            if (tableName == null)
+            {
+                throw new ArgumentNullException("tableName");
+            }
+
+            var deleteOldClause = DeleteOldClause.Replace("{_DatabaseName_}", databaseName);
+            deleteOldClause = deleteOldClause.Replace("{_TableName_}", tableName);
+            deleteOldClause = deleteOldClause.Replace("{_Barrier_}", DateTime.Now.AddDays(-1).ToString("yyyyMMdd"));
+
+            using (var cmd = new SqlCommand(deleteOldClause, connection, transaction))
+            {
+                cmd.ExecuteNonQuery();
+            }
         }
 
         private const string PreparationClause0 = @"

@@ -2,12 +2,16 @@ using System;
 using System.Data.SqlClient;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using PerformanceTelemetry.Record;
 
 namespace PerformanceTelemetry.Container.Saver.Item.SqlText
 {
     public class SqlTextItemSaver : IItemSaver
     {
+        //после сохранения 1000 итемов удалять старье
+        private const long BatchBetweenCleanups = 1;
+
         private readonly HashContainer _hashContainer;
 
         //транзакция к базе данных
@@ -18,9 +22,13 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
 
         //хешер для поиска соотв. стека
         private readonly MD5 _md5;
+        private readonly string _databaseName;
 
         //корень имени таблиц для сохранения
         private readonly string _tableName;
+
+        //индекс итема для очистки
+        private long _cleanupIndex;
 
         //признак, что класс утилизирован
         private bool _disposed = false;
@@ -30,6 +38,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             SqlTransaction transaction,
             SqlConnection connection,
             MD5 md5,
+            string databaseName,
             string tableName
             )
         {
@@ -49,6 +58,10 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             {
                 throw new ArgumentNullException("md5");
             }
+            if (databaseName == null)
+            {
+                throw new ArgumentNullException("databaseName");
+            }
             if (tableName == null)
             {
                 throw new ArgumentNullException("tableName");
@@ -58,6 +71,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             _transaction = transaction;
             _connection = connection;
             _md5 = md5;
+            _databaseName = databaseName;
             _tableName = tableName;
         }
 
@@ -109,6 +123,19 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             }
 
             var result = 0L;
+
+            if (Interlocked.Increment(ref _cleanupIndex) == BatchBetweenCleanups)
+            {
+                //надо очищать
+                SqlTextItemSaverFactory.DoCleanup(
+                    _connection,
+                    _transaction,
+                    _databaseName,
+                    _tableName
+                    );
+
+                Interlocked.Add(ref _cleanupIndex, -BatchBetweenCleanups);
+            }
 
 
             //проверяем и вставляем стек, если необходимо
