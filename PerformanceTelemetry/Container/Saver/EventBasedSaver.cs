@@ -7,11 +7,28 @@ using PerformanceTelemetry.Record;
 
 namespace PerformanceTelemetry.Container.Saver
 {
-    public class EventBasedSaver : IPerformanceSaver
+    public sealed class EventBasedSaver : IPerformanceSaver
     {
-        protected readonly Action<string> _output;
+        //максимальный размер очереди, после которого эвенты не добавляеются в нее, а игнорируются
+        private const int MaximumQueueLength = 5000;
 
+        //интервал через который записывать диагностику размера очереди
+        private const int DiagnosticWriteTimeIntervalInSeconds = 60;
+
+        //минимальный размер очереди при котором будет записываться диагностика
+        private const int WarningQueueSize = 1000;
+
+        //максимальное количество итемов, которое может быть записано одним item writer'ом
+        //(иногда это означает - в рамках одной транзакции, которые желательно время от времени закрывать)
+        private const int MaximumItemCountCanBeWriterByOneItemSaver = 250;
+
+        //логгер
+        private readonly Action<string> _output;
+
+        //фабрика итем сейверов
         private readonly IItemSaverFactory _itemSaverFactory;
+
+        //признак подавления ошибок телеметрии
         private readonly bool _suppressExceptions;
 
         //очередь для записи должна быть потокозащищенной, так как она наполняется из одного трида, а опустошается - из другого
@@ -29,6 +46,9 @@ namespace PerformanceTelemetry.Container.Saver
         //признак, что сейвер еще не стартовал
         private int _started = 0;
 
+        //время последней записи в лог размера очереди
+        private static DateTime _lastDiagnosticMessageTime = DateTime.Now;
+
         //признак, что сейвер завершил работу
         private bool _disposed = false;
 
@@ -45,6 +65,7 @@ namespace PerformanceTelemetry.Container.Saver
             {
                 throw new ArgumentNullException("itemSaverFactory");
             }
+
             _output = logger ?? Console.WriteLine;
 
             _itemSaverFactory = itemSaverFactory;
@@ -60,16 +81,22 @@ namespace PerformanceTelemetry.Container.Saver
                 throw new ArgumentNullException("record");
             }
 
-
-            //если еще не стартовали - стартуем
-            if (Interlocked.CompareExchange(ref _started, 1, 0) == 0)
+            //проверяем, не переполнилась ли очередь
+            //при адском потоке событий, мы можем не успевать записывать
+            if (_recordQueue.Count < MaximumQueueLength)
             {
-                this.WorkStart();
+                //очередь не переполнилась
+
+                //если еще не стартовали - стартуем
+                if (Interlocked.CompareExchange(ref _started, 1, 0) == 0)
+                {
+                    this.WorkStart();
+                }
+
+                _recordQueue.Enqueue(record);
+
+                _newRecord.Set();
             }
-
-            _recordQueue.Enqueue(record);
-
-            _newRecord.Set();
         }
 
         public void Dispose()
@@ -123,6 +150,24 @@ namespace PerformanceTelemetry.Container.Saver
 
                 try
                 {
+                    #region запись в лог размера очереди
+
+                    var rc = _recordQueue.Count;
+                    if (rc >= WarningQueueSize)
+                    {
+                        var now = DateTime.Now;
+                        if ((now - _lastDiagnosticMessageTime).TotalSeconds >= DiagnosticWriteTimeIntervalInSeconds)
+                        {
+                            _lastDiagnosticMessageTime = now;
+
+                            _output("_qsize: " + rc);
+                        }
+                    }
+
+                    #endregion
+
+                    #region опустошаем очередь
+
                     //чтобы не создавать зря транзакцию, если нас разбудило событие выхода - сначала извлекаем
                     //хотя бы один элемент, и, если он есть, то уже начинаем full blown сохранение
 
@@ -133,7 +178,10 @@ namespace PerformanceTelemetry.Container.Saver
                         {
                             itemSaver.SaveItem(item);
 
-                            while (_recordQueue.TryDequeue(out item))
+                            //ограничим число итемов, которые могут быть записаны в один item writer
+                            //то есть даже при ливне итемов, этот цикл рано или поздно завершится
+                            var cnt = MaximumItemCountCanBeWriterByOneItemSaver;
+                            while (_recordQueue.TryDequeue(out item) && --cnt > 0)
                             {
                                 itemSaver.SaveItem(item);
                             }
@@ -141,6 +189,8 @@ namespace PerformanceTelemetry.Container.Saver
                             itemSaver.Commit();
                         }
                     }
+
+                    #endregion
                 }
                 catch (Exception excp)
                 {

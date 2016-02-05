@@ -9,8 +9,8 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
 {
     public class SqlTextItemSaver : IItemSaver
     {
-        //после сохранения 1000 итемов удалять старье
-        private const long BatchBetweenCleanups = 1000;
+        //после сохранения такого количества итемов пытаться удалять старье
+        private const long BatchBetweenCleanups = 250000L;
 
         private readonly HashContainer _hashContainer;
 
@@ -82,6 +82,21 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 throw new ArgumentNullException("item");
             }
 
+            //проверяем не настала ли пора удалять старье
+            if (Interlocked.Increment(ref _cleanupIndex) == BatchBetweenCleanups)
+            {
+                //надо очищать
+                SqlTextItemSaverFactory.DoCleanup(
+                    _connection,
+                    _transaction,
+                    _databaseName,
+                    _tableName
+                    );
+
+                Interlocked.Exchange(ref _cleanupIndex, 0L);
+            }
+
+
             this.SaveItem(
                 null,
                 item
@@ -123,20 +138,6 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             }
 
             var result = 0L;
-
-            if (Interlocked.Increment(ref _cleanupIndex) == BatchBetweenCleanups)
-            {
-                //надо очищать
-                SqlTextItemSaverFactory.DoCleanup(
-                    _connection,
-                    _transaction,
-                    _databaseName,
-                    _tableName
-                    );
-
-                Interlocked.Add(ref _cleanupIndex, -BatchBetweenCleanups);
-            }
-
 
             //проверяем и вставляем стек, если необходимо
 
