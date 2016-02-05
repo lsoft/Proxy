@@ -10,7 +10,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
     public class SqlTextItemSaver : IItemSaver
     {
         //после сохранения 1000 итемов удалять старье
-        private const long BatchBetweenCleanups = 1;
+        private const long BatchBetweenCleanups = 1000;
 
         private readonly HashContainer _hashContainer;
 
@@ -28,7 +28,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
         private readonly string _tableName;
 
         //индекс итема для очистки
-        private long _cleanupIndex;
+        private static long _cleanupIndex;
 
         //признак, что класс утилизирован
         private bool _disposed = false;
