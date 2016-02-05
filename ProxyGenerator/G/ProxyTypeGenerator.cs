@@ -10,6 +10,7 @@ using System.Threading;
 using Microsoft.CSharp;
 using ProxyGenerator.PL;
 using ProxyGenerator.PropertyLogic;
+using ProxyGenerator.WrapMethodResolver;
 
 namespace ProxyGenerator.G
 {
@@ -66,17 +67,23 @@ namespace ProxyGenerator.G
         /// </summary>
         /// <typeparam name="TInterface">Интерфейс, выдаваемый наружу</typeparam>
         /// <typeparam name="TClass">Тип оборачиваемого объекта</typeparam>
-        /// <param name="attributeType">Тип атрибута, которым помечены мемберы, годные к записи телеметрии</param>
+        /// <param name="wrapResolver">Делегат-определитель, надо ли проксить метод</param>
         /// <param name="generatedAssemblyName">Необязательный параметр имени генерируемой сборки</param>
         /// <param name="additionalReferencedAssembliesLocation">Сборки, на которые надо дополнительно сделать референсы при компиляции прокси</param>
         /// <returns>Сформированный ТИП прокси, который после создания ЭКЗЕМПЛЯРА с помощью интерфейса прикидывается оборачиваемым объектом</returns>
         public Type CreateProxyType<TInterface, TClass>(
-            Type attributeType,
+            WrapResolverDelegate wrapResolver,
             string generatedAssemblyName = null,
-            string[] additionalReferencedAssembliesLocation = null)
-            where TInterface : class
-            where TClass : class
+            string[] additionalReferencedAssembliesLocation = null
+            )
+                where TInterface : class
+                where TClass : class
         {
+            if (wrapResolver == null)
+            {
+                throw new ArgumentNullException("wrapResolver");
+            }
+
             var tc = typeof(TClass);
             var ti = typeof(TInterface);
 
@@ -119,7 +126,7 @@ namespace ProxyGenerator.G
 
                 //компилируем, это долгий процесс (поэтому не должен быть под блокировкой)
                 var type = CompileProxyType<TInterface, TClass>(
-                    attributeType,
+                    wrapResolver,
                     _payloadFactory,
                     generatedAssemblyName,
                     additionalReferencedAssembliesLocation);
@@ -195,11 +202,15 @@ namespace ProxyGenerator.G
         #region private static
 
         private static Type CompileProxyType<TInterface, TClass>(
-            Type attributeType,
+            WrapResolverDelegate wrapResolver,
             IProxyPayloadFactory factory,
             string generatedAssemblyName,
             string[] additionalReferencedAssembliesLocation)
         {
+            if (wrapResolver == null)
+            {
+                throw new ArgumentNullException("wrapResolver");
+            }
             if (factory == null)
             {
                 throw new ArgumentNullException("factory");
@@ -319,8 +330,7 @@ namespace ProxyGenerator.G
 
                     var preMethod = string.Empty;
 
-                    var cal = tim.GetCustomAttributes(attributeType, true);
-                    if (cal != null && cal.Length > 0)
+                    if (wrapResolver(tim))
                     {
                         //метод надо оборачивать во враппер
                         preMethod = ProxyMethod;

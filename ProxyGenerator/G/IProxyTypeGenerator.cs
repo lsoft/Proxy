@@ -1,5 +1,6 @@
 ﻿using System;
 using ProxyGenerator.PL;
+using ProxyGenerator.WrapMethodResolver;
 
 namespace ProxyGenerator.G
 {
@@ -22,14 +23,15 @@ namespace ProxyGenerator.G
         /// </summary>
         /// <typeparam name="TInterface">Интерфейс, выдаваемый наружу</typeparam>
         /// <typeparam name="TClass">Тип оборачиваемого объекта</typeparam>
-        /// <param name="attributeType">Тип атрибута, которым помечены мемберы, годные к записи телеметрии</param>
+        /// <param name="wrapResolver">Делегат-определитель, надо ли проксить метод</param>
         /// <param name="generatedAssemblyName">Необязательный параметр имени генерируемой сборки</param>
         /// <param name="additionalReferencedAssembliesLocation">Сборки, на которые надо дополнительно сделать референсы при компиляции прокси</param>
         /// <returns>Сформированный ТИП прокси, который после создания ЭКЗЕМПЛЯРА с помощью интерфейса прикидывается оборачиваемым объектом</returns>
         Type CreateProxyType<TInterface, TClass>(
-            Type attributeType,
+            WrapResolverDelegate wrapResolver,
             string generatedAssemblyName = null,
-            string[] additionalReferencedAssembliesLocation = null)
+            string[] additionalReferencedAssembliesLocation = null
+            )
                 where TInterface : class
                 where TClass : class;
     }

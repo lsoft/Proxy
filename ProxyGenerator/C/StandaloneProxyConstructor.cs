@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ProxyGenerator.G;
 using ProxyGenerator.PL;
+using ProxyGenerator.WrapMethodResolver;
 
 namespace ProxyGenerator.C
 {
@@ -43,17 +44,19 @@ namespace ProxyGenerator.C
         /// </summary>
         /// <typeparam name="TInterface">Интерфейс, выдаваемый наружу</typeparam>
         /// <typeparam name="TClass">Тип оборачиваемого объекта</typeparam>
-        /// <param name="attributeType">Тип атрибута, которым помечены мемберы, годные к записи телеметрии</param>
+        /// <param name="wrapResolver">Делегат-определитель, надо ли проксить метод</param>
         /// <param name="args">Аргументы для конструктора объекта</param>
         /// <returns>Сформированный прокси, которые с помощью интерфейса прикидывается оборачиваемым объектом</returns>
         public TInterface CreateProxy<TInterface, TClass>(
-            Type attributeType,
-            params object[] args)
-                where TInterface : class
-                where TClass : class
+            WrapResolverDelegate wrapResolver,
+            params object[] args
+            )
+            where TInterface : class
+            where TClass : class
         {
             var proxyType = _proxyTypeGenerator.CreateProxyType<TInterface, TClass>(
-                attributeType);
+                wrapResolver
+                );
 
             var constructorArgs = new List<object>
                                   {
@@ -66,6 +69,27 @@ namespace ProxyGenerator.C
 
             return proxy;
 
+        }
+
+        /// <summary>
+        /// Создание прокси-объекта
+        /// </summary>
+        /// <typeparam name="TInterface">Интерфейс, выдаваемый наружу</typeparam>
+        /// <typeparam name="TClass">Тип оборачиваемого объекта</typeparam>
+        /// <param name="attributeType">Тип атрибута, которым помечены мемберы, годные к записи телеметрии</param>
+        /// <param name="args">Аргументы для конструктора объекта</param>
+        /// <returns>Сформированный прокси, которые с помощью интерфейса прикидывается оборачиваемым объектом</returns>
+        public TInterface CreateProxy<TInterface, TClass>(
+            Type attributeType,
+            params object[] args)
+                where TInterface : class
+                where TClass : class
+        {
+            return
+                CreateProxy<TInterface, TClass>(
+                    (mi) => AttributeWrapMethodResolver.NeedToWrap(attributeType, mi),
+                    args
+                    );
         }
 
     }
