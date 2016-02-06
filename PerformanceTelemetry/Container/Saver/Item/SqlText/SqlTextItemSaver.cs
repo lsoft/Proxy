@@ -30,6 +30,10 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
         //индекс итема для очистки
         private static long _cleanupIndex;
 
+        //заранее скомпилированные команды
+        private readonly SqlCommand _insertItemCommand;
+        private readonly SqlCommand _insertStackCommand;
+
         //признак, что класс утилизирован
         private bool _disposed = false;
 
@@ -73,6 +77,21 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             _md5 = md5;
             _databaseName = databaseName;
             _tableName = tableName;
+
+            var insertStackClause = InsertStackClause.Replace(
+                "{_TableName_}",
+                _tableName
+                );
+
+            _insertStackCommand = new SqlCommand(insertStackClause, _connection, _transaction);
+
+            var insertItemClause = InsertItemClause.Replace(
+                "{_TableName_}",
+                _tableName
+                );
+
+            _insertItemCommand = new SqlCommand(insertItemClause, _connection, _transaction);
+
         }
 
         public void SaveItem(IPerformanceRecordData item)
@@ -107,6 +126,9 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
         {
             if (!_disposed)
             {
+                _insertItemCommand.Dispose();
+                _insertStackCommand.Dispose();
+
                 _transaction.Commit();
                 _transaction.Dispose();
 
@@ -118,6 +140,9 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
         {
             if (!_disposed)
             {
+                _insertItemCommand.Dispose();
+                _insertStackCommand.Dispose();
+
                 _transaction.Rollback();
                 _transaction.Dispose();
 
@@ -149,49 +174,33 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             {
                 //такого стека нет, вставляем
 
-                var insertStackClause = InsertStackClause.Replace(
-                    "{_TableName_}",
-                    _tableName
-                    );
+                _insertStackCommand.Parameters.Clear();
+                _insertStackCommand.Parameters.AddWithValue("id", combinedGuid);
+                _insertStackCommand.Parameters.AddWithValue("class_name", CutOff(item.ClassName, SqlTextItemSaverFactory.ClassNameMaxLength));
+                _insertStackCommand.Parameters.AddWithValue("method_name", CutOff(item.MethodName, SqlTextItemSaverFactory.MethodNameMaxLength));
+                _insertStackCommand.Parameters.AddWithValue("creation_stack", item.CreationStack);
 
-                using (var cmd = new SqlCommand(insertStackClause, _connection, _transaction))
-                {
-                    cmd.Parameters.AddWithValue("id", combinedGuid);
-                    cmd.Parameters.AddWithValue("class_name", CutOff(item.ClassName, SqlTextItemSaverFactory.ClassNameMaxLength));
-                    cmd.Parameters.AddWithValue("method_name", CutOff(item.MethodName, SqlTextItemSaverFactory.MethodNameMaxLength));
-                    cmd.Parameters.AddWithValue("creation_stack", item.CreationStack);
-
-                    cmd.ExecuteNonQuery();
-                }
+                _insertStackCommand.ExecuteNonQuery();
 
                 _hashContainer.Add(combinedGuid);
             }
 
 
             //вставляем остальные данные
+            var exceptionMessage = item.Exception != null ? (object) CutOff(item.Exception.Message, SqlTextItemSaverFactory.ExceptionMessageMaxLength) : null;
+            var exceptionStack = item.Exception != null ? (object) item.Exception.StackTrace : null;
+            var exceptionFullText = item.Exception != null ? (object) Exception2StringHelper.ToFullString(item.Exception) : null;
 
-            var insertItemClause = InsertItemClause.Replace(
-                "{_TableName_}",
-                _tableName
-                );
+            _insertItemCommand.Parameters.Clear();
+            _insertItemCommand.Parameters.AddWithValue("id_parent", (object) parentId ?? DBNull.Value);
+            _insertItemCommand.Parameters.AddWithValue("start_time", item.StartTime);
+            _insertItemCommand.Parameters.AddWithValue("exception_message", exceptionMessage ?? DBNull.Value);
+            _insertItemCommand.Parameters.AddWithValue("exception_stack", exceptionStack ?? DBNull.Value);
+            _insertItemCommand.Parameters.AddWithValue("time_interval", item.TimeInterval);
+            _insertItemCommand.Parameters.AddWithValue("id_stack", combinedGuid);
+            _insertItemCommand.Parameters.AddWithValue("exception_full_text", exceptionFullText ?? DBNull.Value);
 
-            using (var cmd = new SqlCommand(insertItemClause, _connection, _transaction))
-            {
-
-                var exceptionMessage = item.Exception != null ? (object)CutOff(item.Exception.Message, SqlTextItemSaverFactory.ExceptionMessageMaxLength) : null;
-                var exceptionStack = item.Exception != null ? (object)item.Exception.StackTrace : null;
-                var exceptionFullText = item.Exception != null ? (object)Exception2StringHelper.ToFullString(item.Exception) : null;
-
-                cmd.Parameters.AddWithValue("id_parent", (object)parentId ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("start_time", item.StartTime);
-                cmd.Parameters.AddWithValue("exception_message", exceptionMessage ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("exception_stack", exceptionStack ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("time_interval", item.TimeInterval);
-                cmd.Parameters.AddWithValue("id_stack", combinedGuid);
-                cmd.Parameters.AddWithValue("exception_full_text", exceptionFullText ?? DBNull.Value);
-
-                result = (long)(decimal)cmd.ExecuteScalar();
-            }
+            result = (long) (decimal) _insertItemCommand.ExecuteScalar();
 
             if (item.Children != null)
             {

@@ -13,14 +13,11 @@ namespace PerformanceTelemetry.Container.Saver
         private const int MaximumQueueLength = 5000;
 
         //интервал через который записывать диагностику размера очереди
-        private const int DiagnosticWriteTimeIntervalInSeconds = 60;
-
-        //минимальный размер очереди при котором будет записываться диагностика
-        private const int WarningQueueSize = 1000;
+        private const int DiagnosticWriteTimeIntervalInSeconds = 30;
 
         //максимальное количество итемов, которое может быть записано одним item writer'ом
         //(иногда это означает - в рамках одной транзакции, которые желательно время от времени закрывать)
-        private const int MaximumItemCountCanBeWriterByOneItemSaver = 250;
+        private const int MaximumItemCountCanBeWritedByOneItemSaver = 250;
 
         //логгер
         private readonly Action<string> _output;
@@ -82,7 +79,7 @@ namespace PerformanceTelemetry.Container.Saver
             }
 
             //проверяем, не переполнилась ли очередь
-            //при адском потоке событий, мы можем не успевать записывать
+            //при ливне событий, мы можем не успевать записывать
             if (_recordQueue.Count < MaximumQueueLength)
             {
                 //очередь не переполнилась
@@ -152,16 +149,21 @@ namespace PerformanceTelemetry.Container.Saver
                 {
                     #region запись в лог размера очереди
 
-                    var rc = _recordQueue.Count;
-                    if (rc >= WarningQueueSize)
+                    var now = DateTime.Now;
+                    if ((now - _lastDiagnosticMessageTime).TotalSeconds >= DiagnosticWriteTimeIntervalInSeconds)
                     {
-                        var now = DateTime.Now;
-                        if ((now - _lastDiagnosticMessageTime).TotalSeconds >= DiagnosticWriteTimeIntervalInSeconds)
-                        {
-                            _lastDiagnosticMessageTime = now;
+                        _lastDiagnosticMessageTime = now;
 
-                            _output("_qsize: " + rc);
-                        }
+                        var rc = _recordQueue.Count;
+
+                        var message = string.Format(
+                            "Telemetry stat:{0}Error count: {1}{0}Queue size: {2}",
+                            Environment.NewLine,
+                            _errorCounter,
+                            rc
+                            );
+
+                        _output(message);
                     }
 
                     #endregion
@@ -174,13 +176,13 @@ namespace PerformanceTelemetry.Container.Saver
                     IPerformanceRecordData item;
                     if (_recordQueue.TryDequeue(out item))
                     {
-                        using(var itemSaver = _itemSaverFactory.CreateItemSaver())
+                        using (var itemSaver = _itemSaverFactory.CreateItemSaver())
                         {
                             itemSaver.SaveItem(item);
 
                             //ограничим число итемов, которые могут быть записаны в один item writer
                             //то есть даже при ливне итемов, этот цикл рано или поздно завершится
-                            var cnt = MaximumItemCountCanBeWriterByOneItemSaver;
+                            var cnt = MaximumItemCountCanBeWritedByOneItemSaver;
                             while (_recordQueue.TryDequeue(out item) && --cnt > 0)
                             {
                                 itemSaver.SaveItem(item);
