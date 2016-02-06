@@ -1,4 +1,5 @@
 using System;
+using System.Data;
 using System.Data.SqlClient;
 using System.Security.Cryptography;
 using System.Text;
@@ -84,6 +85,11 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 );
 
             _insertStackCommand = new SqlCommand(insertStackClause, _connection, _transaction);
+            _insertStackCommand.Parameters.Add("id", SqlDbType.UniqueIdentifier);
+            _insertStackCommand.Parameters.Add("class_name", SqlDbType.VarChar, SqlTextItemSaverFactory.ClassNameMaxLength);
+            _insertStackCommand.Parameters.Add("method_name", SqlDbType.VarChar, SqlTextItemSaverFactory.MethodNameMaxLength);
+            _insertStackCommand.Parameters.Add("creation_stack", SqlDbType.VarChar, -1);
+            _insertStackCommand.Prepare();
 
             var insertItemClause = InsertItemClause.Replace(
                 "{_TableName_}",
@@ -91,7 +97,14 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 );
 
             _insertItemCommand = new SqlCommand(insertItemClause, _connection, _transaction);
-
+            _insertItemCommand.Parameters.Add("id_parent", SqlDbType.BigInt);
+            _insertItemCommand.Parameters.Add("start_time", SqlDbType.DateTime);
+            _insertItemCommand.Parameters.Add("exception_message", SqlDbType.VarChar, SqlTextItemSaverFactory.ExceptionMessageMaxLength);
+            _insertItemCommand.Parameters.Add("exception_stack", SqlDbType.VarChar, -1);
+            _insertItemCommand.Parameters.Add("time_interval", SqlDbType.Float);
+            _insertItemCommand.Parameters.Add("id_stack", SqlDbType.UniqueIdentifier);
+            _insertItemCommand.Parameters.Add("exception_full_text", SqlDbType.VarChar, -1);
+            _insertItemCommand.Prepare();
         }
 
         public void SaveItem(IPerformanceRecordData item)
@@ -174,11 +187,10 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             {
                 //такого стека нет, вставляем
 
-                _insertStackCommand.Parameters.Clear();
-                _insertStackCommand.Parameters.AddWithValue("id", combinedGuid);
-                _insertStackCommand.Parameters.AddWithValue("class_name", CutOff(item.ClassName, SqlTextItemSaverFactory.ClassNameMaxLength));
-                _insertStackCommand.Parameters.AddWithValue("method_name", CutOff(item.MethodName, SqlTextItemSaverFactory.MethodNameMaxLength));
-                _insertStackCommand.Parameters.AddWithValue("creation_stack", item.CreationStack);
+                _insertStackCommand.Parameters["id"].Value = combinedGuid;
+                _insertStackCommand.Parameters["class_name"].Value = CutOff(item.ClassName, SqlTextItemSaverFactory.ClassNameMaxLength);
+                _insertStackCommand.Parameters["method_name"].Value = CutOff(item.MethodName, SqlTextItemSaverFactory.MethodNameMaxLength);
+                _insertStackCommand.Parameters["creation_stack"].Value = item.CreationStack;
 
                 _insertStackCommand.ExecuteNonQuery();
 
@@ -191,14 +203,13 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             var exceptionStack = item.Exception != null ? (object) item.Exception.StackTrace : null;
             var exceptionFullText = item.Exception != null ? (object) Exception2StringHelper.ToFullString(item.Exception) : null;
 
-            _insertItemCommand.Parameters.Clear();
-            _insertItemCommand.Parameters.AddWithValue("id_parent", (object) parentId ?? DBNull.Value);
-            _insertItemCommand.Parameters.AddWithValue("start_time", item.StartTime);
-            _insertItemCommand.Parameters.AddWithValue("exception_message", exceptionMessage ?? DBNull.Value);
-            _insertItemCommand.Parameters.AddWithValue("exception_stack", exceptionStack ?? DBNull.Value);
-            _insertItemCommand.Parameters.AddWithValue("time_interval", item.TimeInterval);
-            _insertItemCommand.Parameters.AddWithValue("id_stack", combinedGuid);
-            _insertItemCommand.Parameters.AddWithValue("exception_full_text", exceptionFullText ?? DBNull.Value);
+            _insertItemCommand.Parameters["id_parent"].Value = (object) parentId ?? DBNull.Value;
+            _insertItemCommand.Parameters["start_time"].Value = item.StartTime;
+            _insertItemCommand.Parameters["exception_message"].Value = exceptionMessage ?? DBNull.Value;
+            _insertItemCommand.Parameters["exception_stack"].Value = exceptionStack ?? DBNull.Value;
+            _insertItemCommand.Parameters["time_interval"].Value = item.TimeInterval;
+            _insertItemCommand.Parameters["id_stack"].Value = combinedGuid;
+            _insertItemCommand.Parameters["exception_full_text"].Value = exceptionFullText ?? DBNull.Value;
 
             result = (long) (decimal) _insertItemCommand.ExecuteScalar();
 
