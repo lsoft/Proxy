@@ -78,15 +78,16 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
                 );
 
             using (var itemSaver = new SqlTextItemSaverFactory(
-                (a) => Debug.WriteLine(a),
+                new EmptyLoggerAdapter(), 
                 connectionString.ConnectionString,
                 TrnHelper.MainDatabaseName,
-                TableName
+                TableName,
+                TimeSpan.FromDays(-1)
                 ))
             {
                 using (var ebSaver = new EventBasedSaver(
                     itemSaver,
-                    (a) => Debug.WriteLine(a),
+                    new EmptyLoggerAdapter(),
                     false
                     ))
                 {
@@ -106,15 +107,16 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
                 );
 
             using (var itemSaver = new SqlTextItemSaverFactory(
-                (a) => Debug.WriteLine(a),
+                new EmptyLoggerAdapter(), 
                 connectionString.ConnectionString,
                 TrnHelper.MainDatabaseName,
-                TableName
+                TableName,
+                TimeSpan.FromDays(-1)
                 ))
             {
                 using (var ebSaver = new EventBasedSaver(
                     itemSaver,
-                    (a) => Debug.WriteLine(a),
+                    new EmptyLoggerAdapter(),
                     false
                     ))
                 {
@@ -123,7 +125,7 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
 
                 using (var ebSaver = new EventBasedSaver(
                     itemSaver,
-                    (a) => Debug.WriteLine(a),
+                    new EmptyLoggerAdapter(),
                     false
                     ))
                 {
@@ -150,15 +152,16 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
                 );
 
             using (var itemSaver = new SqlTextItemSaverFactory(
-                (a) => Debug.WriteLine(a),
+                new EmptyLoggerAdapter(), 
                 connectionString.ConnectionString,
                 TrnHelper.MainDatabaseName,
-                TableName
+                TableName,
+                TimeSpan.FromDays(-1)
                 ))
             {
                 using (var ebSaver = new EventBasedSaver(
                     itemSaver,
-                    (a) => Debug.WriteLine(a),
+                    new EmptyLoggerAdapter(),
                     false
                     ))
                 {
@@ -216,15 +219,16 @@ order
                 );
 
             using (var itemSaver = new SqlTextItemSaverFactory(
-                (a) => Debug.WriteLine(a),
+                new EmptyLoggerAdapter(), 
                 connectionString.ConnectionString,
                 TrnHelper.MainDatabaseName,
-                TableName
+                TableName,
+                TimeSpan.FromDays(-1)
                 ))
             {
                 using (var ebSaver = new EventBasedSaver(
                     itemSaver,
-                    (a) => Debug.WriteLine(a),
+                    new EmptyLoggerAdapter(),
                     false
                     ))
                 {
@@ -307,15 +311,16 @@ order by
             var dataExists2 = false;
 
             using (var itemSaver = new SqlTextItemSaverFactory(
-                (a) => Debug.WriteLine(a),
+                new EmptyLoggerAdapter(), 
                 connectionString.ConnectionString,
                 TrnHelper.MainDatabaseName,
-                TableName
+                TableName,
+                TimeSpan.FromDays(-1)
                 ))
             {
                 using (var ebSaver = new EventBasedSaver(
                     itemSaver,
-                    (a) => Debug.WriteLine(a),
+                    new EmptyLoggerAdapter(),
                     false
                     ))
                 {

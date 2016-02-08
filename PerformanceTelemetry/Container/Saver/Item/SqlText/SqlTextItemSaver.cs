@@ -27,6 +27,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
 
         //корень имени таблиц для сохранения
         private readonly string _tableName;
+        private readonly TimeSpan _cleanupBarrier;
 
         //индекс итема для очистки
         private static long _cleanupIndex;
@@ -44,7 +45,8 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             SqlConnection connection,
             MD5 md5,
             string databaseName,
-            string tableName
+            string tableName,
+            TimeSpan cleanupBarrier
             )
         {
             if (hashContainer == null)
@@ -72,12 +74,18 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 throw new ArgumentNullException("tableName");
             }
 
+            if (cleanupBarrier.Ticks >= 0)
+            {
+                throw new ArgumentException("cleanupBarrier.Ticks >= 0");
+            }
+
             _hashContainer = hashContainer;
             _transaction = transaction;
             _connection = connection;
             _md5 = md5;
             _databaseName = databaseName;
             _tableName = tableName;
+            _cleanupBarrier = cleanupBarrier;
 
             var insertStackClause = InsertStackClause.Replace(
                 "{_TableName_}",
@@ -122,7 +130,8 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                     _connection,
                     _transaction,
                     _databaseName,
-                    _tableName
+                    _tableName,
+                    _cleanupBarrier
                     );
 
                 Interlocked.Exchange(ref _cleanupIndex, 0L);
@@ -211,7 +220,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             _insertItemCommand.Parameters["id_stack"].Value = combinedGuid;
             _insertItemCommand.Parameters["exception_full_text"].Value = exceptionFullText ?? DBNull.Value;
 
-            result = (long) (decimal) _insertItemCommand.ExecuteScalar();
+            result = (long)  _insertItemCommand.ExecuteScalar();
 
             if (item.Children != null)
             {
@@ -263,10 +272,11 @@ values
         private const string InsertItemClause = @"
 insert into [dbo].[{_TableName_}]
     ( date_commit,  id_parent,  start_time,  exception_message,  exception_stack,  time_interval,  id_stack,  exception_full_text)
+output inserted.$identity 
 values
     (   GETDATE(), @id_parent, @start_time, @exception_message, @exception_stack, @time_interval, @id_stack, @exception_full_text);
 
-select SCOPE_IDENTITY();
+--select SCOPE_IDENTITY();
 ";
 
         #endregion

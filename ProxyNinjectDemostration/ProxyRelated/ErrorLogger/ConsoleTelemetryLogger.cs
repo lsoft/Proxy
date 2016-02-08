@@ -5,6 +5,16 @@ namespace ProxyNinjectDemostration.ProxyRelated.ErrorLogger
 {
     public class ConsoleTelemetryLogger : ITelemetryLogger
     {
+        public void LogMessage(Type sourceType, string message)
+        {
+            Console.WriteLine(
+                "{0} {1} {2}{2}{2}",
+                sourceType.FullName,
+                message,
+                Environment.NewLine
+                );
+        }
+
         public void LogHandledException(Type sourceType, string message, Exception excp)
         {
             Console.WriteLine(

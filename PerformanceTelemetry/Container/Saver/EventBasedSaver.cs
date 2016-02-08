@@ -19,11 +19,11 @@ namespace PerformanceTelemetry.Container.Saver
         //(иногда это означает - в рамках одной транзакции, которые желательно время от времени закрывать)
         private const int MaximumItemCountCanBeWritedByOneItemSaver = 250;
 
-        //логгер
-        private readonly Action<string> _output;
-
         //фабрика итем сейверов
         private readonly IItemSaverFactory _itemSaverFactory;
+
+        //логгер
+        private readonly ITelemetryLogger _logger;
 
         //признак подавления ошибок телеметрии
         private readonly bool _suppressExceptions;
@@ -54,7 +54,7 @@ namespace PerformanceTelemetry.Container.Saver
 
         public EventBasedSaver(
             IItemSaverFactory itemSaverFactory,
-            Action<string> logger,
+            ITelemetryLogger logger,
             bool suppressExceptions = true
             )
         {
@@ -62,10 +62,14 @@ namespace PerformanceTelemetry.Container.Saver
             {
                 throw new ArgumentNullException("itemSaverFactory");
             }
+            if (logger == null)
+            {
+                throw new ArgumentNullException("logger");
+            }
 
-            _output = logger ?? Console.WriteLine;
 
             _itemSaverFactory = itemSaverFactory;
+            _logger = logger;
             _suppressExceptions = suppressExceptions;
         }
 
@@ -163,7 +167,7 @@ namespace PerformanceTelemetry.Container.Saver
                             rc
                             );
 
-                        _output(message);
+                        _logger.LogMessage(this.GetType(), message);
                     }
 
                     #endregion
@@ -214,7 +218,7 @@ namespace PerformanceTelemetry.Container.Saver
                             //в этом случае телеметрия лог завалит сообщениями, в которых потеряется ВСЁ и лог станет нечитаемым
                             //поэтому первые сто сообщений записываются в лог, а потом записываемся КАЖДОЕ СОТОЕ
 
-                            _output(Exception2StringHelper.ToFullString(excp));
+                            _logger.LogHandledException(this.GetType(), "При сохранении рекорда возникла ошибка", excp);
                         }
                     }
                     else

@@ -14,10 +14,11 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
         //контейнер хешей стека не обязан быть потоко-защищенным, так как обращения к нему идут только из потока сохранения
         private readonly HashContainer _hashContainer;
 
-        private readonly Action<string> _output;
+        private readonly ITelemetryLogger _logger;
         private readonly string _connectionString;
         private readonly string _databaseName;
         private readonly string _tableName;
+        private readonly TimeSpan _cleanupBarrier;
 
         //хешер для поиска соотв. стека
         private readonly MD5 _md5 = MD5.Create();
@@ -27,14 +28,18 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
 
 
         public SqlTextItemSaverFactory(
-            Action<string> logger,
+            ITelemetryLogger logger,
             string connectionString,
             string databaseName,
-            string tableName
+            string tableName,
+            TimeSpan cleanupBarrier
             )
 
         {
-            //logger allowed to be null
+            if (logger == null)
+            {
+                throw new ArgumentNullException("logger");
+            }
             if (connectionString == null)
             {
                 throw new ArgumentNullException("connectionString");
@@ -44,11 +49,18 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 throw new ArgumentNullException("databaseName");
             }
 
-            _output = logger ?? Console.WriteLine;
+            if (cleanupBarrier.Ticks >= 0)
+            {
+                throw new ArgumentException("cleanupBarrier.Ticks >= 0");
+            }
+
+            
             _hashContainer = new HashContainer();
+            _logger = logger;
             _connectionString = connectionString;
             _databaseName = databaseName;
             _tableName = tableName;
+            _cleanupBarrier = cleanupBarrier;
 
             _connection = new SqlConnection(_connectionString);
             _connection.Open();
@@ -58,7 +70,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
 
         public IItemSaver CreateItemSaver()
         {
-            var transaction = _connection.BeginTransaction(IsolationLevel.Snapshot);
+            var transaction = _connection.BeginTransaction();//IsolationLevel.Snapshot);
 
             try
             {
@@ -68,7 +80,8 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                     _connection,
                     _md5,
                     _databaseName,
-                    _tableName
+                    _tableName,
+                    _cleanupBarrier
                     );
 
                 return
@@ -91,8 +104,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 }
                 catch (Exception excp)
                 {
-                    _output(excp.Message);
-                    _output(excp.StackTrace);
+                    _logger.LogHandledException(this.GetType(), "Ошибка утилизации конекшена", excp);
 
                 }
             }
@@ -105,7 +117,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
         private void DoPreparation()
         {
 
-            _output("PerformanceTelemetry Before preparation");
+            _logger.LogMessage(this.GetType(), "PerformanceTelemetry Before preparation");
 
             var clause0 = PreparationClause0.Replace("{_DatabaseName_}", _databaseName);
             using (var cmd = new SqlCommand(clause0, _connection))
@@ -113,7 +125,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 cmd.ExecuteNonQuery();
             }
 
-            _output("PerformanceTelemetry Before clause 1");
+            _logger.LogMessage(this.GetType(), "PerformanceTelemetry Before clause 1");
 
 
             var prepared = false;
@@ -132,11 +144,11 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 }
             }
 
-            _output(string.Format("PerformanceTelemetry Prepared {0}", prepared));
+            _logger.LogMessage(this.GetType(), string.Format("PerformanceTelemetry Prepared {0}", prepared));
 
             if (!prepared)
             {
-                _output("PerformanceTelemetry Before clause 2");
+                _logger.LogMessage(this.GetType(), "PerformanceTelemetry Before clause 2");
 
                 var clause2 = PreparationClause2.Replace("{_DatabaseName_}", _databaseName);
                 clause2 = clause2.Replace("{_ClassNameMaxLength_}", ClassNameMaxLength.ToString());
@@ -147,7 +159,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                     cmd.ExecuteNonQuery();
                 }
 
-                _output("PerformanceTelemetry Before clause 3");
+                _logger.LogMessage(this.GetType(), "PerformanceTelemetry Before clause 3");
 
                 var clause3 = PreparationClause3.Replace("{_DatabaseName_}", _databaseName);
                 clause3 = clause3.Replace("{_TableName_}", _tableName);
@@ -156,7 +168,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                     cmd.ExecuteNonQuery();
                 }
 
-                _output("PerformanceTelemetry Before clause 4");
+                _logger.LogMessage(this.GetType(), "PerformanceTelemetry Before clause 4");
 
                 var clause4 = PreparationClause4.Replace("{_DatabaseName_}", _databaseName);
                 clause4 = clause4.Replace("{_TableName_}", _tableName);
@@ -166,7 +178,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                     cmd.ExecuteNonQuery();
                 }
 
-                _output("PerformanceTelemetry Before clause 5");
+                _logger.LogMessage(this.GetType(), "PerformanceTelemetry Before clause 5");
 
                 var clause5 = PreparationClause5.Replace("{_DatabaseName_}", _databaseName);
                 clause5 = clause5.Replace("{_TableName_}", _tableName);
@@ -175,7 +187,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                     cmd.ExecuteNonQuery();
                 }
 
-                _output("PerformanceTelemetry Before clause 6");
+                _logger.LogMessage(this.GetType(), "PerformanceTelemetry Before clause 6");
 
                 var clause6 = PreparationClause6.Replace("{_DatabaseName_}", _databaseName);
                 clause6 = clause6.Replace("{_TableName_}", _tableName);
@@ -183,18 +195,28 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 {
                     cmd.ExecuteNonQuery();
                 }
+
+                _logger.LogMessage(this.GetType(), "PerformanceTelemetry Before clause 7");
+
+                var clause7 = PreparationClause7.Replace("{_DatabaseName_}", _databaseName);
+                clause7 = clause7.Replace("{_TableName_}", _tableName);
+                using (var cmd = new SqlCommand(clause7, _connection))
+                {
+                    cmd.ExecuteNonQuery();
+                }
             }
 
-            _output("PerformanceTelemetry Before DeleteOldClause");
+            _logger.LogMessage(this.GetType(), "PerformanceTelemetry Before DeleteOldClause");
 
             DoCleanup(
                 _connection,
                 null,
                 _databaseName,
-                _tableName
+                _tableName,
+                _cleanupBarrier
                 );
 
-            _output("PerformanceTelemetry Before ReadStackTableClause");
+            _logger.LogMessage(this.GetType(), "PerformanceTelemetry Before ReadStackTableClause");
 
             var readStackClause = ReadStackTableClause.Replace("{_DatabaseName_}", _databaseName);
             readStackClause = readStackClause.Replace("{_TableName_}", _tableName);
@@ -212,14 +234,15 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 }
             }
 
-            _output("PerformanceTelemetry After preparation");
+            _logger.LogMessage(this.GetType(), "PerformanceTelemetry After preparation");
         }
 
         internal static void DoCleanup(
             SqlConnection connection,
             SqlTransaction transaction,
             string databaseName,
-            string tableName
+            string tableName,
+            TimeSpan cleanupBarrier
             )
         {
             if (connection == null)
@@ -236,9 +259,14 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 throw new ArgumentNullException("tableName");
             }
 
+            if (cleanupBarrier.Ticks >= 0)
+            {
+                throw new ArgumentException("cleanupBarrier.Ticks >= 0");
+            }
+
             var deleteOldClause = DeleteOldClause.Replace("{_DatabaseName_}", databaseName);
             deleteOldClause = deleteOldClause.Replace("{_TableName_}", tableName);
-            deleteOldClause = deleteOldClause.Replace("{_Barrier_}", DateTime.Now.AddDays(-1).ToString("yyyyMMdd"));
+            deleteOldClause = deleteOldClause.Replace("{_Barrier_}", DateTime.Now.Add(cleanupBarrier).ToString("yyyyMMdd"));
 
             using (var cmd = new SqlCommand(deleteOldClause, connection, transaction))
             {
@@ -301,8 +329,8 @@ ALTER TABLE [dbo].[{_TableName_}Stack] ADD CONSTRAINT
         private const string PreparationClause4 = @"
 CREATE TABLE [dbo].[{_TableName_}]
 (
-    [id] [bigint] IDENTITY(1,1) NOT NULL,
     [date_commit] [datetime] NOT NULL,
+    [id] [bigint] IDENTITY(1,1) NOT NULL,
     [id_parent] [bigint] NULL,
     [start_time] [datetime] NOT NULL,
     [exception_message] varchar({_ExceptionMessageMaxLength_}) NULL,
@@ -312,8 +340,8 @@ CREATE TABLE [dbo].[{_TableName_}]
     [exception_full_text] varchar(max) NULL,
     CONSTRAINT [PK_{_TableName_}] PRIMARY KEY CLUSTERED 
     (
-        [id] ASC,
-        [date_commit] ASC
+        [date_commit] ASC,
+        [id] ASC
     )WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 ";
@@ -336,7 +364,18 @@ ALTER TABLE [dbo].[{_TableName_}] ADD CONSTRAINT
     (
         id
     )   ON UPDATE  NO ACTION 
-	    ON DELETE  NO ACTION 
+        ON DELETE  NO ACTION 
+
+CREATE NONCLUSTERED INDEX [IX_{_TableName_}_id_parent] ON [dbo].[{_TableName_}]
+(
+    [id_parent] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
+
+CREATE NONCLUSTERED INDEX [IX_{_TableName_}_time_interval] ON [dbo].[{_TableName_}]
+(
+    [time_interval] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
+
 ";
 
         private const string PreparationClause6 = @"
@@ -357,6 +396,85 @@ AS
         tl.date_commit
 FROM [dbo].[{_TableName_}] tl
 JOIN [dbo].[{_TableName_}Stack] tls ON tl.id_stack = tls.id
+";
+
+        private const string PreparationClause7 = @"
+CREATE FUNCTION [dbo].[GetTelemetryTree]
+(
+	@root_id bigint = 0
+)
+RETURNS @ResultTable TABLE 
+(
+    [id] [bigint]  NOT NULL,
+	[date_commit] [datetime] NOT NULL,
+	[id_parent] [bigint] NULL,
+	[start_time] [datetime] NOT NULL,
+	[time_interval] [float] NOT NULL,
+	[class_name] [varchar](300) NOT NULL,
+	[method_name] [varchar](300) NOT NULL,
+	[creation_stack] [varchar](max) NOT NULL,
+	[exception_message] [varchar](300)  NULL,
+	[exception_stack] [varchar](max)  NULL,
+	[exception_full_text] [varchar](max)  NULL
+)
+--WITH
+--	SCHEMABINDING
+AS 
+BEGIN
+
+	declare @ids table (id bigint)
+
+	insert into @ResultTable
+	output inserted.id into @ids
+	select
+		tl.[id], 
+		tl.[date_commit], 
+		tl.[id_parent], 
+		tl.[start_time], 
+		tl.[time_interval],
+		tls.[class_name],
+		tls.[method_name],
+		tls.[creation_stack],
+		tl.[exception_message], 
+		tl.[exception_stack],  
+		tl.[exception_full_text]
+	from [dbo].[{_TableName_}] tl
+	JOIN [dbo].[{_TableName_}Stack] tls ON tl.id_stack = tls.id
+	where
+		tl.[id] = @root_id
+
+	declare acursor cursor for select id from [dbo].[{_TableName_}] where id_parent = @root_id;
+
+	open acursor;
+	declare @current_id bigint;
+	fetch acursor into @current_id;
+
+	while @@FETCH_STATUS = 0
+	begin
+
+	insert into @ResultTable
+	select
+		[id], 
+		[date_commit], 
+		[id_parent], 
+		[start_time], 
+		[time_interval],
+		[class_name],
+		[method_name],
+		[creation_stack],
+		[exception_message], 
+		[exception_stack],  
+		[exception_full_text]
+	from [dbo].[GetTelemetryTree](@current_id) 
+
+	fetch acursor into @current_id;
+	end
+
+	close acursor;
+	deallocate acursor;
+
+	RETURN;
+END
 
 ";
 
