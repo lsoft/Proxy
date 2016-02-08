@@ -108,7 +108,7 @@
     <Compile Include="Container\IPerformanceContainer.cs" />
     <Compile Include="Container\PerformanceContainer.cs" />
     <Compile Include="Container\Saver\EventBasedSaver.cs" />
-    <Compile Include="Container\Saver\HashContainer.cs" />
+    <Compile Include="Container\Saver\StackIdContainer.cs" />
     <Compile Include="Container\Saver\Item\IItemSaver.cs" />
     <Compile Include="Container\Saver\Item\IItemSaverFactory.cs" />
     <Compile Include="Container\Saver\Item\MultipleXml\MultipleXmlItemSaver.cs" />

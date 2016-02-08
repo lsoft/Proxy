@@ -13,7 +13,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
         //после сохранения такого количества итемов пытаться удалять старье
         private const long BatchBetweenCleanups = 250000L;
 
-        private readonly HashContainer _hashContainer;
+        private readonly StackIdContainer _stackIdContainer;
 
         //транзакция к базе данных
         private readonly SqlTransaction _transaction;
@@ -40,7 +40,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
         private bool _disposed = false;
 
         public SqlTextItemSaver(
-            HashContainer hashContainer,
+            StackIdContainer stackIdContainer,
             SqlTransaction transaction,
             SqlConnection connection,
             MD5 md5,
@@ -49,9 +49,9 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             TimeSpan cleanupBarrier
             )
         {
-            if (hashContainer == null)
+            if (stackIdContainer == null)
             {
-                throw new ArgumentNullException("hashContainer");
+                throw new ArgumentNullException("stackIdContainer");
             }
             if (transaction == null)
             {
@@ -79,7 +79,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 throw new ArgumentException("cleanupBarrier.Ticks >= 0");
             }
 
-            _hashContainer = hashContainer;
+            _stackIdContainer = stackIdContainer;
             _transaction = transaction;
             _connection = connection;
             _md5 = md5;
@@ -93,7 +93,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 );
 
             _insertStackCommand = new SqlCommand(insertStackClause, _connection, _transaction);
-            _insertStackCommand.Parameters.Add("id", SqlDbType.UniqueIdentifier);
+            _insertStackCommand.Parameters.Add("guid", SqlDbType.UniqueIdentifier);
             _insertStackCommand.Parameters.Add("class_name", SqlDbType.VarChar, SqlTextItemSaverFactory.ClassNameMaxLength);
             _insertStackCommand.Parameters.Add("method_name", SqlDbType.VarChar, SqlTextItemSaverFactory.MethodNameMaxLength);
             _insertStackCommand.Parameters.Add("creation_stack", SqlDbType.VarChar, -1);
@@ -110,7 +110,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             _insertItemCommand.Parameters.Add("exception_message", SqlDbType.VarChar, SqlTextItemSaverFactory.ExceptionMessageMaxLength);
             _insertItemCommand.Parameters.Add("exception_stack", SqlDbType.VarChar, -1);
             _insertItemCommand.Parameters.Add("time_interval", SqlDbType.Float);
-            _insertItemCommand.Parameters.Add("id_stack", SqlDbType.UniqueIdentifier);
+            _insertItemCommand.Parameters.Add("id_stack", SqlDbType.Int);
             _insertItemCommand.Parameters.Add("exception_full_text", SqlDbType.VarChar, -1);
             _insertItemCommand.Prepare();
         }
@@ -192,18 +192,19 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             var combinedHash = _md5.ComputeHash(Encoding.UTF8.GetBytes(combined));
             var combinedGuid = new Guid(combinedHash);
 
-            if (!_hashContainer.Contains(combinedGuid))
+            int stackIndex;
+            if (!_stackIdContainer.TryGet(combinedGuid, out stackIndex))
             {
                 //такого стека нет, вставляем
 
-                _insertStackCommand.Parameters["id"].Value = combinedGuid;
+                _insertStackCommand.Parameters["guid"].Value = combinedGuid;
                 _insertStackCommand.Parameters["class_name"].Value = CutOff(item.ClassName, SqlTextItemSaverFactory.ClassNameMaxLength);
                 _insertStackCommand.Parameters["method_name"].Value = CutOff(item.MethodName, SqlTextItemSaverFactory.MethodNameMaxLength);
                 _insertStackCommand.Parameters["creation_stack"].Value = item.CreationStack;
 
-                _insertStackCommand.ExecuteNonQuery();
+                stackIndex = (int)_insertStackCommand.ExecuteScalar();
 
-                _hashContainer.Add(combinedGuid);
+                _stackIdContainer.Add(combinedGuid, stackIndex);
             }
 
 
@@ -217,7 +218,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             _insertItemCommand.Parameters["exception_message"].Value = exceptionMessage ?? DBNull.Value;
             _insertItemCommand.Parameters["exception_stack"].Value = exceptionStack ?? DBNull.Value;
             _insertItemCommand.Parameters["time_interval"].Value = item.TimeInterval;
-            _insertItemCommand.Parameters["id_stack"].Value = combinedGuid;
+            _insertItemCommand.Parameters["id_stack"].Value = stackIndex;
             _insertItemCommand.Parameters["exception_full_text"].Value = exceptionFullText ?? DBNull.Value;
 
             result = (long)  _insertItemCommand.ExecuteScalar();
@@ -264,9 +265,10 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
 
         private const string InsertStackClause = @"
 insert into [dbo].[{_TableName_}Stack]
-    (  id,  class_name,  method_name,  creation_stack )
+    (  guid,  class_name,  method_name,  creation_stack )
+output inserted.$identity 
 values
-    ( @id, @class_name, @method_name, @creation_stack )
+    ( @guid, @class_name, @method_name, @creation_stack )
 ";
 
         private const string InsertItemClause = @"

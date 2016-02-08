@@ -12,7 +12,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
         public const int ExceptionMessageMaxLength = 300;
 
         //контейнер хешей стека не обязан быть потоко-защищенным, так как обращения к нему идут только из потока сохранения
-        private readonly HashContainer _hashContainer;
+        private readonly StackIdContainer _stackIdContainer;
 
         private readonly ITelemetryLogger _logger;
         private readonly string _connectionString;
@@ -55,7 +55,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             }
 
             
-            _hashContainer = new HashContainer();
+            _stackIdContainer = new StackIdContainer();
             _logger = logger;
             _connectionString = connectionString;
             _databaseName = databaseName;
@@ -70,12 +70,12 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
 
         public IItemSaver CreateItemSaver()
         {
-            var transaction = _connection.BeginTransaction();//IsolationLevel.Snapshot);
+            var transaction = _connection.BeginTransaction(IsolationLevel.Snapshot);
 
             try
             {
                 var r = new SqlTextItemSaver(
-                    _hashContainer,
+                    _stackIdContainer,
                     transaction,
                     _connection,
                     _md5,
@@ -227,9 +227,10 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 {
                     while (reader.Read())
                     {
-                        var guid = (Guid) reader["id"];
+                        var id = (int) reader["id"];
+                        var guid = (Guid)reader["guid"];
 
-                        _hashContainer.Add(guid);
+                        _stackIdContainer.Add(guid, id);
                     }
                 }
             }
@@ -310,7 +311,8 @@ use [{_DatabaseName_}]
 
 CREATE TABLE [dbo].[{_TableName_}Stack]
 (
-    id uniqueidentifier NOT NULL,
+    [id] int IDENTITY(1,1) NOT NULL,
+    [guid] uniqueidentifier NOT NULL,
     [class_name] varchar({_ClassNameMaxLength_}) NOT NULL,
     [method_name] varchar({_MethodNameMaxLength_}) NOT NULL,
     creation_stack varchar(MAX) NOT NULL
@@ -336,7 +338,7 @@ CREATE TABLE [dbo].[{_TableName_}]
     [exception_message] varchar({_ExceptionMessageMaxLength_}) NULL,
     [exception_stack] varchar(max) NULL,
     [time_interval] [float] NOT NULL,
-    [id_stack] uniqueidentifier NOT NULL,
+    [id_stack] int NOT NULL,
     [exception_full_text] varchar(max) NULL,
     CONSTRAINT [PK_{_TableName_}] PRIMARY KEY CLUSTERED 
     (
@@ -485,7 +487,8 @@ where [date_commit] < '{_Barrier_}'
 
         private const string ReadStackTableClause = @"
 select
-    id
+    id,
+    guid
     --,creation_stack
 from [dbo].[{_TableName_}Stack]
 ";
