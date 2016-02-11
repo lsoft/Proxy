@@ -214,6 +214,15 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 {
                     cmd.ExecuteNonQuery();
                 }
+
+                _logger.LogMessage(this.GetType(), "PerformanceTelemetry Before clause 8");
+
+                var clause8 = PreparationClause8.Replace("{_DatabaseName_}", _databaseName);
+                clause8 = clause8.Replace("{_TableName_}", _tableName);
+                using (var cmd = new SqlCommand(clause8, _connection))
+                {
+                    cmd.ExecuteNonQuery();
+                }
             }
 
             _logger.LogMessage(this.GetType(), "PerformanceTelemetry Before DeleteOldClause");
@@ -488,6 +497,29 @@ BEGIN
 	RETURN;
 END
 
+";
+
+        private const string PreparationClause8 = @"
+CREATE FUNCTION [dbo].[GetSlowestItems]
+(
+	@cnt int = 100
+)
+RETURNS TABLE 
+WITH
+	SCHEMABINDING
+AS RETURN
+	select top(@cnt)
+		tl.id,
+		tl.id_parent,
+		tl.start_time,
+		tl.time_interval,
+		tls.class_name,
+		tls.method_name,
+		tl.exception_message
+	from [dbo].[{_TableName_}] tl
+	join [dbo].[{_TableName_}Stack] tls on tls.id = tl.id_stack
+	order by
+		tl.time_interval desc
 ";
 
         private const string DeleteOldClause = @"
