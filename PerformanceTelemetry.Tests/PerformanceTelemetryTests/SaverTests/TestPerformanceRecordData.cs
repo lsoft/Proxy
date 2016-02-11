@@ -8,6 +8,8 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
 {
     internal class TestPerformanceRecordData : IPerformanceRecordData
     {
+        private readonly List<IPerformanceRecordData> _children;
+
         public string ClassName
         {
             get;
@@ -44,10 +46,10 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
             private set;
         }
 
-        public ReadOnlyCollection<IPerformanceRecordData> Children
+        public List<IPerformanceRecordData> GetChildren()
         {
-            get;
-            private set;
+            return
+                new List<IPerformanceRecordData>(_children); //clone the collection
         }
 
         public TestPerformanceRecordData(string className, string methodName, DateTime startTime, double timeInterval, string creationStack)
@@ -58,7 +60,7 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
             TimeInterval = timeInterval;
             CreationStack = creationStack;
 
-            Children = new ReadOnlyCollection<IPerformanceRecordData>(new List<IPerformanceRecordData>());
+            _children = new List<IPerformanceRecordData>();
         }
 
         public TestPerformanceRecordData(string className, string methodName, DateTime startTime, double timeInterval, string creationStack, Exception exception)
@@ -70,7 +72,7 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
             CreationStack = creationStack;
             Exception = exception;
 
-            Children = new ReadOnlyCollection<IPerformanceRecordData>(new List<IPerformanceRecordData>());
+            _children = new List<IPerformanceRecordData>();
         }
 
         public TestPerformanceRecordData(string className, string methodName, DateTime startTime, double timeInterval, string creationStack, List<IPerformanceRecordData> children)
@@ -80,7 +82,7 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
             StartTime = new DateTime(startTime.Year, startTime.Month, startTime.Day, startTime.Hour, startTime.Minute, startTime.Second); //внутри СБД время округлится, если будут миллисекунды; и тест провалится!
             TimeInterval = timeInterval;
             CreationStack = creationStack;
-            Children = children.AsReadOnly();
+            _children = children;
         }
 
         public TestPerformanceRecordData(string className, string methodName, DateTime startTime, double timeInterval, string creationStack,  Exception exception, List<IPerformanceRecordData> children)
@@ -91,7 +93,7 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
             TimeInterval = timeInterval;
             CreationStack = creationStack;
             Exception = exception;
-            Children = children.AsReadOnly();
+            _children = children;
         }
 
         public bool CheckEqualityFor(

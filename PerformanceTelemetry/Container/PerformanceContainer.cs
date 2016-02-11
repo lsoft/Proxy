@@ -18,8 +18,9 @@ namespace PerformanceTelemetry.Container
         /// <summary>
         /// Класс-пустышка, возвращается хост-приложению, если в PerformanceContainer.OpenPerformanceSession
         /// произошла какая-то ошибка.
+        /// Чтобы не возвращать нулл и соотв. чтоы хост-приложение не падало на NullReferenceException
         /// </summary>
-        private class PerformanceRecordDataMock : IPerformanceRecordData
+        private class PerformanceRecordMock : IPerformanceRecord
         {
             #region Implementation of IPerformanceRecordData
 
@@ -76,25 +77,14 @@ namespace PerformanceTelemetry.Container
                 }
             }
 
-            public ReadOnlyCollection<IPerformanceRecordData> Children
+            public List<IPerformanceRecordData> GetChildren()
             {
-                get
-                {
-                    return 
-                        new ReadOnlyCollection<IPerformanceRecordData>(new List<IPerformanceRecordData>());
-                }
+                return
+                    new List<IPerformanceRecordData>();
             }
 
             #endregion
-        }
 
-        /// <summary>
-        /// Класс-пустышка, возвращается хост-приложению, если в PerformanceContainer.OpenPerformanceSession
-        /// произошла какая-то ошибка.
-        /// Чтобы не возвращать нулл и соотв. чтоы хост-приложение не падало на NullReferenceException
-        /// </summary>
-        private class PerformanceRecordMock : IPerformanceRecord
-        {
             #region Implementation of IPerformanceRecord
 
             public bool Active
@@ -132,7 +122,8 @@ namespace PerformanceTelemetry.Container
 
             public IPerformanceRecordData GetPerformanceData()
             {
-                return new PerformanceRecordDataMock();
+                return
+                    this;
             }
 
             #endregion
@@ -189,7 +180,7 @@ namespace PerformanceTelemetry.Container
                     throw new ArgumentNullException("methodName");
                 }
 
-                IPerformanceRecord result = null;
+                IPerformanceRecord result;
 
                 //определяем, есть ли перформасы в этом триде
                 IPerformanceRecord root;
@@ -251,29 +242,19 @@ namespace PerformanceTelemetry.Container
 
                 closingRecord.Close();
 
-                var allowToSaveRecord = false;
-                
                 //определяем, если это корень умер, то после помирания сохраняем его в файл и удаляем из хранилища
                 IPerformanceRecord containerRecord;
                 if (_activeRecordDict.TryGetValue(threadId, out containerRecord))
                 {
                     if (ReferenceEquals(containerRecord, closingRecord)) //сравнение тупо по ссылке
                     {
-                        //разрешаем сохранять
-                        allowToSaveRecord = true;
-
                         //удаляем
                         IPerformanceRecord removedObjet;
                         _activeRecordDict.TryRemove(threadId, out removedObjet);
-                    }
-                }
 
-                //сохраняем не под локом, так как эту процедуру не нужно лочить на этом уровне
-                //(лочиться должно в сейвере, так как вызовы могут идти из разных потоков)
-                if (allowToSaveRecord)
-                {
-                    //сохраняем
-                    _saver.Save(closingRecord.GetPerformanceData());
+                        //сохраняем
+                        _saver.Save(closingRecord.GetPerformanceData());
+                    }
                 }
             }
             catch (Exception excp)
@@ -291,7 +272,20 @@ namespace PerformanceTelemetry.Container
         {
             if (this._saver != null)
             {
-                this._saver.Dispose();
+                try
+                {
+                    this._saver.Dispose();
+                }
+                catch (Exception excp)
+                {
+                    _logger.LogHandledException(
+                        this.GetType(),
+                        "Ошибка _saver.Dispose",
+                        excp);
+
+                    //пофигу, если статистика сломается, хост-приложение должно работать
+                }
+
                 this._saver = null;
             }
         }

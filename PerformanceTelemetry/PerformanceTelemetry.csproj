@@ -134,7 +134,6 @@
     <Compile Include="Record\IPerformanceRecordData.cs" />
     <Compile Include="Record\IPerformanceRecordFactory.cs" />
     <Compile Include="Record\PerformanceRecord.cs" />
-    <Compile Include="Record\PerformanceRecordData.cs" />
     <Compile Include="Record\PerformanceRecordFactory.cs" />
     <Compile Include="ThreadIdProvider\IThreadIdProvider.cs" />
     <Compile Include="ThreadIdProvider\ThreadIdProvider.cs" />

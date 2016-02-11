@@ -8,6 +8,8 @@ namespace ProxyNinjectDemostration.ProxyRelated.Saver
     {
         public void SaveItem(IPerformanceRecordData item)
         {
+            var children = item.GetChildren();
+
             Console.WriteLine(
                 "[{0} - {1}] {2}.{3} || {4} || Children count = {5}",
                 item.StartTime.ToString("yyyyMMdd HH:mm:ss.fff"),
@@ -15,7 +17,7 @@ namespace ProxyNinjectDemostration.ProxyRelated.Saver
                 item.ClassName,
                 item.MethodName,
                 item.Exception != null ? item.Exception.Message : "-= NO EXCEPTION =-",
-                item.Children.Count
+                children.Count
                 );
         }
 

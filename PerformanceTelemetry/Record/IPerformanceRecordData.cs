@@ -39,9 +39,10 @@ namespace PerformanceTelemetry.Record
             get;
         }
 
-        ReadOnlyCollection<IPerformanceRecordData> Children
-        {
-            get;
-        }
+        /// <summary>
+        /// It constructs children collection by any request, so do not call this method extensively.
+        /// </summary>
+        /// <returns>Children collection</returns>
+        List<IPerformanceRecordData> GetChildren();
     }
 }

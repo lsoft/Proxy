@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using PerformanceTelemetry.Timer;
 
@@ -51,6 +52,68 @@ namespace PerformanceTelemetry.Record
                 }
             }
         }
+
+        #region Implementation of IPerformanceRecordData
+
+        string IPerformanceRecordData.ClassName
+        {
+            get
+            {
+                return
+                    _className;
+            }
+        }
+
+        string IPerformanceRecordData.MethodName
+        {
+            get
+            {
+                return
+                    _methodName;
+            }
+        }
+
+        DateTime IPerformanceRecordData.StartTime
+        {
+            get
+            {
+                return
+                    _startTime;
+            }
+        }
+
+        Exception IPerformanceRecordData.Exception
+        {
+            get
+            {
+                return
+                    _exception;
+            }
+        }
+
+        string IPerformanceRecordData.CreationStack
+        {
+            get
+            {
+                return
+                    _creationStack;
+            }
+        }
+
+        public List<IPerformanceRecordData> GetChildren()
+        {
+            var children = new List<IPerformanceRecordData>(this._diedChildren);
+
+            if (this.ActiveChild != null)
+            {
+                children.Add(this.ActiveChild);
+            }
+
+            return
+                children;
+        }
+
+        #endregion
 
         public PerformanceRecord(
             string className,
@@ -179,22 +242,8 @@ namespace PerformanceTelemetry.Record
 
         public IPerformanceRecordData GetPerformanceData()
         {
-            var children = new List<IPerformanceRecord>(this._diedChildren);
-
-            if(this.ActiveChild != null)
-            {
-                children.Add(this.ActiveChild);
-            }
-
             return
-                new PerformanceRecordData(
-                    this._className,
-                    this._methodName,
-                    this._startTime,
-                    this.TimeInterval,
-                    this._exception,
-                    this._creationStack,
-                    children.ConvertAll(j => j.GetPerformanceData()));
+                this;
         }
 
         public void SetExceptionFlag(Exception excp)

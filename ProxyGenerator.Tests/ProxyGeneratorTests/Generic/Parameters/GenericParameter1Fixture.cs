@@ -86,9 +86,7 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests.Generic.Parameters
 
             Assert.IsNotNull(proxy);
 
-            proxy.X1(new Dictionary<string, int>
-            {
-            });
+            proxy.X1(new Dictionary<string, int>());
 
             Assert.IsTrue(ok);
             Assert.IsFalse(setExceptionFlag);

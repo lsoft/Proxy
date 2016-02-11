@@ -1,13 +1,16 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 
 namespace ProxyGenerator.G
 {
-    internal class AssemblyContainer
+    internal class AssemblyContainer : IDisposable
     {
         private readonly ReaderWriterLockSlim _locker;
         private readonly List<Assembly> _assembliesList;
+
+        private bool _disposed = false;
 
         public AssemblyContainer()
         {
@@ -54,5 +57,21 @@ namespace ProxyGenerator.G
                 _locker.ExitReadLock();
             }
         }
+
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+
+                _locker.Dispose();
+            }
+        }
+
+        ~AssemblyContainer()
+        {
+            this.Dispose();
+        }
+
     }
 }

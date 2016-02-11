@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 
@@ -23,7 +24,7 @@ namespace ProxyGenerator.G
 
         public string GetProxyClassName(Type classType)
         {
-            string result = null;
+            string result;
 
             if (classType.IsGenericType)
             {
@@ -43,14 +44,14 @@ namespace ProxyGenerator.G
                 result = string.Format(
                     "{0}{1}Proxy",
                     ppp,
-                    _proxyTimeSuffix.Ticks.ToString());
+                    _proxyTimeSuffix.Ticks.ToString(CultureInfo.InvariantCulture));
             }
             else
             {
                 result = string.Format(
                     "{0}{1}Proxy",
                     classType.Name,
-                    _proxyTimeSuffix.Ticks.ToString());
+                    _proxyTimeSuffix.Ticks.ToString(CultureInfo.InvariantCulture));
             }
 
             return result;
@@ -59,7 +60,7 @@ namespace ProxyGenerator.G
 
         public string GetConstructorProxyClassName(Type classType)
         {
-            string result = null;
+            string result;
 
             if (classType.IsGenericType)
             {
@@ -70,14 +71,14 @@ namespace ProxyGenerator.G
                 result = string.Format(
                     "{0}{1}Proxy",
                     ppp,
-                    _proxyTimeSuffix.Ticks.ToString());
+                    _proxyTimeSuffix.Ticks.ToString(CultureInfo.InvariantCulture));
             }
             else
             {
                 result = string.Format(
                     "{0}{1}Proxy",
                     classType.Name,
-                    _proxyTimeSuffix.Ticks.ToString());
+                    _proxyTimeSuffix.Ticks.ToString(CultureInfo.InvariantCulture));
             }
 
             return result;
@@ -87,7 +88,7 @@ namespace ProxyGenerator.G
         
         public string GetClassName(Type classType)
         {
-            string result = null;
+            string result;
 
             if (classType.IsGenericType)
             {
@@ -121,7 +122,7 @@ namespace ProxyGenerator.G
 
         public string GetArgumentNameList(ParameterInfo[] parameters)
         {
-            var result = "";
+            string result;
 
             result = string.Join(
                 ", ",
@@ -163,7 +164,7 @@ namespace ProxyGenerator.G
 
         public string ParameterTypeConverter(Type parameterType)
         {
-            string result = null;
+            string result;
 
             if (parameterType.IsGenericType || (parameterType.IsByRef && parameterType.GetElementType().IsGenericType))
             {

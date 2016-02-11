@@ -147,7 +147,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.MultipleXml.XmlSaver
                 //проверяем, надо ли менять папку
                 CheckForNextFolder();
 
-                var size = 0;
+                int size;
 
                 //сохраняем тело
                 using (var dataFileStream = new FileStream(_dataPathMask, FileMode.Append, FileAccess.Write, FileShare.None))

@@ -98,10 +98,6 @@ namespace ProxyNinjectDemostration.ProxyRelated
                 .Bind<IPerformanceSaver>()
                 .To<EventBasedSaver>()
                 .InSingletonScope()
-                .WithConstructorArgument(
-                    "logger",
-                    c => new Action<string>((message) => c.Kernel.Get<IConsoleLogger>().LogMessage(message))
-                )
                 ;
         }
 

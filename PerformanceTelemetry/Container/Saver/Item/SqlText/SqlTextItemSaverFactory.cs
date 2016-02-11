@@ -1,6 +1,7 @@
 using System;
 using System.Data;
 using System.Data.SqlClient;
+using System.Globalization;
 using System.Security.Cryptography;
 
 namespace PerformanceTelemetry.Container.Saver.Item.SqlText
@@ -75,6 +76,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             try
             {
                 var r = new SqlTextItemSaver(
+                    _logger,
                     _stackIdContainer,
                     transaction,
                     _connection,
@@ -109,7 +111,15 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 }
             }
 
-            _md5.Dispose();
+            try
+            {
+                _md5.Dispose();
+            }
+            catch (Exception excp)
+            {
+                _logger.LogHandledException(this.GetType(), "Ошибка утилизации хэш алгоритма", excp);
+
+            }
         }
 
         #region private code
@@ -151,8 +161,8 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 _logger.LogMessage(this.GetType(), "PerformanceTelemetry Before clause 2");
 
                 var clause2 = PreparationClause2.Replace("{_DatabaseName_}", _databaseName);
-                clause2 = clause2.Replace("{_ClassNameMaxLength_}", ClassNameMaxLength.ToString());
-                clause2 = clause2.Replace("{_MethodNameMaxLength_}", MethodNameMaxLength.ToString());
+                clause2 = clause2.Replace("{_ClassNameMaxLength_}", ClassNameMaxLength.ToString(CultureInfo.InvariantCulture));
+                clause2 = clause2.Replace("{_MethodNameMaxLength_}", MethodNameMaxLength.ToString(CultureInfo.InvariantCulture));
                 clause2 = clause2.Replace("{_TableName_}", _tableName);
                 using (var cmd = new SqlCommand(clause2, _connection))
                 {
@@ -172,7 +182,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
 
                 var clause4 = PreparationClause4.Replace("{_DatabaseName_}", _databaseName);
                 clause4 = clause4.Replace("{_TableName_}", _tableName);
-                clause4 = clause4.Replace("{_ExceptionMessageMaxLength_}", ExceptionMessageMaxLength.ToString());
+                clause4 = clause4.Replace("{_ExceptionMessageMaxLength_}", ExceptionMessageMaxLength.ToString(CultureInfo.InvariantCulture));
                 using (var cmd = new SqlCommand(clause4, _connection))
                 {
                     cmd.ExecuteNonQuery();

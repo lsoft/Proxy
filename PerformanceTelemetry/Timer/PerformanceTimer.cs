@@ -5,16 +5,17 @@ namespace PerformanceTelemetry.Timer
 {
     public class PerformanceTimer : IPerformanceTimer
     {
-        private readonly bool _isPerfCounterSupported = false;
-        private readonly Int64 _currentFrequency = 0;
-        private readonly Int64 _startValue = 0;
+        private static readonly bool _isPerfCounterSupported;
+        private static readonly Int64 _currentFrequency;
+
+        private readonly Int64 _startValue;
 
         [DllImport("kernel32.dll")]
         private static extern int QueryPerformanceCounter(ref Int64 count);
         [DllImport("kernel32.dll")]
         private static extern int QueryPerformanceFrequency(ref Int64 frequency);
 
-        public PerformanceTimer()
+        static PerformanceTimer()
         {
             // Query the high-resolution timer only if it is supported.
             // A returned frequency of 1000 typically indicates that it is not
@@ -35,7 +36,10 @@ namespace PerformanceTelemetry.Timer
                 // Environment.TickCount instead.
                 _currentFrequency = 1000;
             }
+        }
 
+        public PerformanceTimer()
+        {
             _startValue = Value;
         }
 
@@ -66,12 +70,15 @@ namespace PerformanceTelemetry.Timer
                 {
                     // Get the value here if the counter is supported.
                     QueryPerformanceCounter(ref tickCount);
-                    return tickCount;
+                    
+                    return
+                        tickCount;
                 }
                 else
                 {
                     // Otherwise, use Environment.TickCount.
-                    return (Int64)Environment.TickCount;
+                    return
+                        Environment.TickCount;
                 }
             }
         }

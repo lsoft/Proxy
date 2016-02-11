@@ -111,7 +111,6 @@
     <Compile Include="G\ProxyTypeGenerator.cs" />
     <Compile Include="G\ProxyKey.cs" />
     <Compile Include="G\ProxySourceGenerator.cs" />
-    <Compile Include="Pair.cs" />
     <Compile Include="PropertyLogic\PairProperty.cs" />
     <Compile Include="PL\IProxyPayload.cs" />
     <Compile Include="PL\IProxyPayloadFactory.cs" />

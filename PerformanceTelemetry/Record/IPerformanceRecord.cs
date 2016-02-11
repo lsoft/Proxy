@@ -2,7 +2,7 @@
 
 namespace PerformanceTelemetry.Record
 {
-    public interface IPerformanceRecord
+    public interface IPerformanceRecord : IPerformanceRecordData
     {
         bool Active
         {

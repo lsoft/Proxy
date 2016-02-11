@@ -13,6 +13,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
         //после сохранения такого количества итемов пытаться удалять старье
         private const long BatchBetweenCleanups = 250000L;
 
+        private readonly ITelemetryLogger _logger;
         private readonly StackIdContainer _stackIdContainer;
 
         //транзакция к базе данных
@@ -40,6 +41,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
         private bool _disposed = false;
 
         public SqlTextItemSaver(
+            ITelemetryLogger logger,
             StackIdContainer stackIdContainer,
             SqlTransaction transaction,
             SqlConnection connection,
@@ -49,6 +51,10 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             TimeSpan cleanupBarrier
             )
         {
+            if (logger == null)
+            {
+                throw new ArgumentNullException("logger");
+            }
             if (stackIdContainer == null)
             {
                 throw new ArgumentNullException("stackIdContainer");
@@ -79,6 +85,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 throw new ArgumentException("cleanupBarrier.Ticks >= 0");
             }
 
+            _logger = logger;
             _stackIdContainer = stackIdContainer;
             _transaction = transaction;
             _connection = connection;
@@ -151,8 +158,31 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 _insertItemCommand.Dispose();
                 _insertStackCommand.Dispose();
 
-                _transaction.Commit();
-                _transaction.Dispose();
+                try
+                {
+                    _transaction.Commit();
+                }
+                catch (Exception excp)
+                {
+                    _logger.LogHandledException(
+                        this.GetType(),
+                        "Ошибка _transaction.Commit()",
+                        excp
+                        );
+                }
+
+                try
+                {
+                    _transaction.Dispose();
+                }
+                catch (Exception excp)
+                {
+                    _logger.LogHandledException(
+                        this.GetType(),
+                        "Ошибка _transaction.Dispose()",
+                        excp
+                        );
+                }
 
                 _disposed = true;
             }
@@ -162,11 +192,58 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
         {
             if (!_disposed)
             {
-                _insertItemCommand.Dispose();
-                _insertStackCommand.Dispose();
+                try
+                {
+                    _insertItemCommand.Dispose();
+                }
+                catch (Exception excp)
+                {
+                    _logger.LogHandledException(
+                        this.GetType(),
+                        "Ошибка _insertItemCommand.Dispose()",
+                        excp
+                        );
+                }
 
-                _transaction.Rollback();
-                _transaction.Dispose();
+                try
+                {
+                    _insertStackCommand.Dispose();
+                }
+                catch (Exception excp)
+                {
+                    _logger.LogHandledException(
+                        this.GetType(),
+                        "Ошибка _insertStackCommand.Dispose()",
+                        excp
+                        );
+                }
+
+                try
+                {
+                    _transaction.Rollback();
+                }
+                catch (Exception excp)
+                {
+                    _logger.LogHandledException(
+                        this.GetType(),
+                        "Ошибка _transaction.Rollback()",
+                        excp
+                        );
+                }
+
+                try
+                {
+                    _transaction.Dispose();
+                }
+                catch (Exception excp)
+                {
+                    _logger.LogHandledException(
+                        this.GetType(),
+                        "Ошибка _transaction.Dispose()",
+                        excp
+                        );
+                }
+
 
                 _disposed = true;
             }
@@ -183,8 +260,6 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             {
                 throw new ArgumentNullException("item");
             }
-
-            var result = 0L;
 
             //проверяем и вставляем стек, если необходимо
 
@@ -221,11 +296,12 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             _insertItemCommand.Parameters["id_stack"].Value = stackIndex;
             _insertItemCommand.Parameters["exception_full_text"].Value = exceptionFullText ?? DBNull.Value;
 
-            result = (long)  _insertItemCommand.ExecuteScalar();
+            var result = (long)  _insertItemCommand.ExecuteScalar();
 
-            if (item.Children != null)
+            var children = item.GetChildren();
+            if (children != null)
             {
-                foreach (var child in item.Children)
+                foreach (var child in children)
                 {
                     SaveItem(result, child);
                 }

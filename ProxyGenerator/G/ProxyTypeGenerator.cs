@@ -18,11 +18,13 @@ namespace ProxyGenerator.G
     /// Генератор прокси-объектов
     /// Один должен быть создан в одном экземпляре на  каждый ТИП фабрики полезной нагрузки
     /// </summary>
-    public class ProxyTypeGenerator : IProxyTypeGenerator
+    public class ProxyTypeGenerator : IProxyTypeGenerator, IDisposable
     {
         private readonly IProxyPayloadFactory _payloadFactory;
         private readonly Dictionary<ProxyKey, Type> _preCompiledCache;
         private readonly ReaderWriterLockSlim _locker;
+
+        private bool _disposed = false;
 
         /// <summary>
         /// Хранилище сгенерированных сборок, чтобы их не добавлять в референсы новых генерируемых сборок
@@ -140,6 +142,16 @@ namespace ProxyGenerator.G
             return proxyType;
         }
 
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+
+                _locker.Dispose();
+            }
+        }
+
         #region private
 
         /// <summary>
@@ -148,7 +160,7 @@ namespace ProxyGenerator.G
         /// </summary>
         private Type TryToSaveProxyTypeToCache(ProxyKey key, Type proxyType)
         {
-            Type result = null;
+            Type result;
 
             _locker.EnterWriteLock();
             try
@@ -271,7 +283,7 @@ namespace ProxyGenerator.G
             var tppDict = new Dictionary<string, PairProperty>();
             foreach (var item in pdList)
             {
-                PairProperty pp = null;
+                PairProperty pp;
                 if (tppDict.ContainsKey(item.PropertyName))
                 {
                     pp = tppDict[item.PropertyName];
@@ -328,7 +340,7 @@ namespace ProxyGenerator.G
                             : "void";
                     var notVoid = retType != typeof (void);
 
-                    var preMethod = string.Empty;
+                    string preMethod;
 
                     if (wrapResolver(tim))
                     {
@@ -431,7 +443,7 @@ namespace ProxyGenerator.G
 
             #region compile with .NET 4.5
 
-            Assembly compiledAssembly = null;
+            Assembly compiledAssembly;
             using (var compiler = new CSharpCodeProvider(new Dictionary<String, String> { { "CompilerVersion", "v4.0" } }))
             {
                 var compilerParameters = new CompilerParameters();

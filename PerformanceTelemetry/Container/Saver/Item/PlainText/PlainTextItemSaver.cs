@@ -70,9 +70,10 @@ namespace PerformanceTelemetry.Container.Saver.Item.PlainText
                         : string.Empty
                 });
 
-            if (item.Children != null && item.Children.Count > 0)
+            var children = item.GetChildren();
+            if (children != null && children.Count > 0)
             {
-                foreach (var citem in item.Children)
+                foreach (var citem in children)
                 {
                     WriteItem(level + 1, citem);
                 }

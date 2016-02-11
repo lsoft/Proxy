@@ -74,7 +74,7 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
 
             Assert.IsNotNull(proxy);
 
-            I5 a = null;
+            I5 a;
             proxy.X(out a);
 
             Assert.IsTrue(ok);

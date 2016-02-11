@@ -19,9 +19,10 @@ namespace PerformanceTelemetry.Container.Saver.Item.MultipleXml.XmlSaver
 
             //сначала внутренние рекорды
             var innerXml = new StringBuilder();
-            if (item.Children != null && item.Children.Count > 0)
+            var children = item.GetChildren();
+            if (children != null && children.Count > 0)
             {
-                foreach (var citem in item.Children)
+                foreach (var citem in children)
                 {
                     var childXml = PrepareXml(citem);
                     innerXml.Append(childXml);
@@ -31,7 +32,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.MultipleXml.XmlSaver
             //потом стек ексцепшенов
 
             //формируем строку xml
-            var record0 = new StringBuilder(_recordXml);
+            var record0 = new StringBuilder(RecordXml);
             var record1 = record0.Replace(
                 "{_ClassNameBase64_}", 
                 HttpUtility.UrlEncode(item.ClassName));
@@ -75,7 +76,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.MultipleXml.XmlSaver
                 throw new ArgumentNullException("excp");
             }
 
-            var excp0 = new StringBuilder(_exceptionXml);
+            var excp0 = new StringBuilder(ExceptionXml);
             var excp1 = excp0.Replace(
                 "{_dotNetExceptionType_}",
                 excp.GetType().Name);
@@ -94,7 +95,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.MultipleXml.XmlSaver
             return excp4;
         }
 
-        private string _recordXml = @"
+        private const string RecordXml = @"
 <PerformanceRecord>
     <ClassNameBase64>{_ClassNameBase64_}</ClassNameBase64>
     <MethodName>{_MethodName_}</MethodName>
@@ -110,7 +111,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.MultipleXml.XmlSaver
 </PerformanceRecord>
 ";
 
-        private string _exceptionXml = @"
+        private const string ExceptionXml = @"
 <Exception>
     <dotNetExceptionType>{_dotNetExceptionType_}</dotNetExceptionType>
     <Message>{_Message_}</Message>
