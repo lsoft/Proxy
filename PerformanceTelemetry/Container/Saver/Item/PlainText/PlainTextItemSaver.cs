@@ -27,16 +27,24 @@ namespace PerformanceTelemetry.Container.Saver.Item.PlainText
             _output = output ?? Console.WriteLine;
         }
 
-        public void SaveItem(IPerformanceRecordData item)
+        public void SaveItems(
+            IPerformanceRecordData[] items,
+            int itemCount
+            )
         {
-            if (item == null)
+            if (items == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException("items");
             }
 
             lock (_locker)
             {
-                WriteItem(0, item);
+                for (var cc = 0; cc < itemCount; cc++)
+                {
+                    var item = items[cc];
+
+                    WriteItemLeveled(0, item);
+                }
             }
         }
 
@@ -52,7 +60,10 @@ namespace PerformanceTelemetry.Container.Saver.Item.PlainText
 
         #region private code
 
-        private void WriteItem(int level, IPerformanceRecordData item)
+        private void WriteItemLeveled(
+            int level,
+            IPerformanceRecordData item
+            )
         {
             var prior = new string(' ', level * 2);
 
@@ -75,7 +86,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.PlainText
             {
                 foreach (var citem in children)
                 {
-                    WriteItem(level + 1, citem);
+                    WriteItemLeveled(level + 1, citem);
                 }
             }
         }

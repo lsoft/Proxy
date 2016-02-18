@@ -115,7 +115,7 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
             var startTime = (DateTime)reader["start_time"];
             var exceptionMessage = reader["exception_message"] is DBNull ? null : (string)reader["exception_message"];
             var exceptionStack = reader["exception_stack"] is DBNull ? null : (string)reader["exception_stack"];
-            var timeInterval = (double)reader["time_interval"];
+            var timeInterval = (float)reader["time_interval"];
             var creationStack = (string)reader["creation_stack"];
             var exceptionFullText = reader["exception_full_text"] is DBNull ? null : (string)reader["exception_full_text"];
 

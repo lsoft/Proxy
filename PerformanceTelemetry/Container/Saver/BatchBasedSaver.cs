@@ -8,7 +8,11 @@ using PerformanceTelemetry.Record;
 
 namespace PerformanceTelemetry.Container.Saver
 {
-    public sealed class EventBasedSaver : IPerformanceSaver
+    /// <summary>
+    /// Сохранитель итемов батчами; это уменьшает затраты ЦП, но дает задержку в сохранении итемов.
+    /// Рекомендуется использовать в случае большого потока событий (ливня событий).
+    /// </summary>
+    public sealed class BatchBasedSaver : IPerformanceSaver
     {
         //максимальный размер очереди, после которого эвенты не добавляеются в нее, а игнорируются
         private const int MaximumQueueLength = 5000;
@@ -18,7 +22,10 @@ namespace PerformanceTelemetry.Container.Saver
 
         //максимальное количество итемов, которое может быть записано одним item writer'ом
         //(иногда это означает - в рамках одной транзакции, которые желательно время от времени закрывать)
-        private const int MaximumItemCountCanBeWritedByOneItemSaver = 250;
+        private const int BatchSize = 1000;
+
+        //время ожидания, пока наберется количество итемов в размере как минимум 1 батч
+        private const int BatchWaitTimeoutMsec = 10000;
 
         //фабрика итем сейверов
         private readonly IItemSaverFactory _itemSaverFactory;
@@ -54,9 +61,9 @@ namespace PerformanceTelemetry.Container.Saver
         private Thread _workerThread;
 
         //контейнер итемов для сохранения, чтобы не пересоздавать его постоянно
-        private readonly IPerformanceRecordData[] _batch = new IPerformanceRecordData[MaximumItemCountCanBeWritedByOneItemSaver];
+        private readonly IPerformanceRecordData[] _batch = new IPerformanceRecordData[BatchSize];
 
-        public EventBasedSaver(
+        public BatchBasedSaver(
             IItemSaverFactory itemSaverFactory,
             ITelemetryLogger logger,
             bool suppressExceptions = true
@@ -88,7 +95,8 @@ namespace PerformanceTelemetry.Container.Saver
 
             //проверяем, не переполнилась ли очередь
             //при ливне событий, мы можем не успевать записывать
-            if (_recordQueue.Count < MaximumQueueLength)
+            var rc = _recordQueue.Count;
+            if (rc < MaximumQueueLength)
             {
                 //очередь не переполнилась
 
@@ -100,7 +108,12 @@ namespace PerformanceTelemetry.Container.Saver
 
                 _recordQueue.Enqueue(record);
 
-                _newRecord.Set();
+                if (rc + 1 >= BatchSize)
+                {
+                    //итемов набралось на батч
+
+                    _newRecord.Set();
+                }
             }
         }
 
@@ -142,7 +155,7 @@ namespace PerformanceTelemetry.Container.Saver
                         _shouldStop,
                         _newRecord
                     },
-                    -1
+                    BatchWaitTimeoutMsec
                 ); //при смене порядка эвентов надо менять код, которые юзает waitIndex
 
                 //после срабатывания события, сначала пытаемся сохранить всё, а уже потом проверяем условие выхода
@@ -163,7 +176,6 @@ namespace PerformanceTelemetry.Container.Saver
                 try
                 {
                     ProcessQueue();
-
                 }
                 catch (Exception excp)
                 {
@@ -195,7 +207,7 @@ namespace PerformanceTelemetry.Container.Saver
                         //2) при попытке сохранить итемы произошла ошибка
                         //3) не включен режим суппресса исключений
                         //то в этом случае ошибку все равно давим и выходим
-                        if (waitIndex == 0 || waitIndex == WaitHandle.WaitTimeout)
+                        if (waitIndex == 0)
                         {
                             return;
                         }
@@ -208,7 +220,7 @@ namespace PerformanceTelemetry.Container.Saver
                 }
 
                 //выходим после попытки сохранить всё, если конечно было приказано
-                if (waitIndex == 0 || waitIndex == WaitHandle.WaitTimeout)
+                if (waitIndex == 0)
                 {
                     return;
                 }
@@ -243,12 +255,11 @@ namespace PerformanceTelemetry.Container.Saver
 
                 #region опустошаем очередь
 
-                //ограничим число итемов, которые могут быть записаны в один item writer
-                //то есть даже при ливне итемов, этот цикл рано или поздно завершится
+                //набраем батч на сохранение
                 var cnt = 0;
 
                 IPerformanceRecordData item;
-                while (_recordQueue.TryDequeue(out item) && cnt < MaximumItemCountCanBeWritedByOneItemSaver)
+                while (_recordQueue.TryDequeue(out item) && cnt < BatchSize)
                 {
                     _batch[cnt] = item;
 
@@ -268,7 +279,8 @@ namespace PerformanceTelemetry.Container.Saver
                 }
 
                 #endregion
-            } while (_recordQueue.Count > 0 && !_shouldStop.WaitOne(0));
+
+            } while (_recordQueue.Count >= BatchSize && !_shouldStop.WaitOne(0));
         }
 
         #endregion

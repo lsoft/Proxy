@@ -107,7 +107,18 @@
   <ItemGroup>
     <Compile Include="Container\IPerformanceContainer.cs" />
     <Compile Include="Container\PerformanceContainer.cs" />
+    <Compile Include="Container\Saver\BatchBasedSaver.cs" />
     <Compile Include="Container\Saver\EventBasedSaver.cs" />
+    <Compile Include="Container\Saver\Item\Sql\SqlCommand\SqlCommandItemSaver.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Container\Saver\Item\Sql\SqlCommand\SqlCommandItemSaverFactory.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Container\Saver\Item\Sql\SqlHelper.cs" />
+    <Compile Include="Container\Saver\Item\Sql\LastRowIdContainer.cs" />
+    <Compile Include="Container\Saver\Item\Sql\SqlBatch\SqlBatchItemSaver.cs" />
+    <Compile Include="Container\Saver\Item\Sql\SqlBatch\SqlBatchItemSaverFactory.cs" />
     <Compile Include="Container\Saver\StackIdContainer.cs" />
     <Compile Include="Container\Saver\Item\IItemSaver.cs" />
     <Compile Include="Container\Saver\Item\IItemSaverFactory.cs" />
@@ -115,8 +126,6 @@
     <Compile Include="Container\Saver\Item\MultipleXml\MultipleXmlItemSaverFactory.cs" />
     <Compile Include="Container\Saver\Item\PlainText\PlainTextItemSaver.cs" />
     <Compile Include="Container\Saver\Item\PlainText\PlainTextItemSaverFactory.cs" />
-    <Compile Include="Container\Saver\Item\SqlText\SqlTextItemSaver.cs" />
-    <Compile Include="Container\Saver\Item\SqlText\SqlTextItemSaverFactory.cs" />
     <Compile Include="Container\Saver\Item\MultipleXml\XmlSaver\IXmlPreparator.cs" />
     <Compile Include="Container\Saver\Item\MultipleXml\XmlSaver\IXmlSaver.cs" />
     <Compile Include="Container\Saver\Item\MultipleXml\XmlSaver\SqlXmlSaver.cs" />

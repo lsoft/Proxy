@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PerformanceTelemetry.Container.Saver;
-using PerformanceTelemetry.Container.Saver.Item.SqlText;
+using PerformanceTelemetry.Container.Saver.Item.Sql.SqlCommand;
 using PerformanceTelemetry.Record;
 using PerformanceTelemetry.Tests.DB.DB;
 using PerformanceTelemetry.Tests.DB.Servicing;
@@ -19,7 +19,7 @@ using PerformanceTelemetry.Tests.DB.Servicing;
 namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
 {
     [TestClass]
-    public class SqlTextSaverFixture : DatabaseFixture
+    public class SqlCommandSaverFixture : DatabaseFixture
     {
         private const string TableName = "PerformanceArtifacts";
 
@@ -30,7 +30,7 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
         //{
         //}
 
-        public SqlTextSaverFixture()
+        public SqlCommandSaverFixture()
         {
             try
             {
@@ -77,12 +77,12 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
                 true
                 );
 
-            using (var itemSaver = new SqlTextItemSaverFactory(
+            using (var itemSaver = new SqlCommandItemSaverFactory(
                 new EmptyLoggerAdapter(), 
                 connectionString.ConnectionString,
                 TrnHelper.MainDatabaseName,
                 TableName,
-                TimeSpan.FromDays(-1)
+                1000000L
                 ))
             {
                 using (var ebSaver = new EventBasedSaver(
@@ -106,12 +106,12 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
                 true
                 );
 
-            using (var itemSaver = new SqlTextItemSaverFactory(
+            using (var itemSaver = new SqlCommandItemSaverFactory(
                 new EmptyLoggerAdapter(), 
                 connectionString.ConnectionString,
                 TrnHelper.MainDatabaseName,
                 TableName,
-                TimeSpan.FromDays(-1)
+                1000000L
                 ))
             {
                 using (var ebSaver = new EventBasedSaver(
@@ -135,6 +135,69 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
         }
 
         [TestMethod]
+        public void TwoTestWithSameDatabase()
+        {
+            var connectionString = new SqlServerDatabaseConnectionString(
+                Instance.DatabasePath,
+                TestDatabaseName,
+                true
+                );
+
+            var record0 = new TestPerformanceRecordData(
+                StringGenerator.GetString("ClassName0"),
+                StringGenerator.GetString("MethodName0"),
+                DateTime.Now,
+                100,
+                StringGenerator.GetString("CreationStack0")
+                );
+
+            var record1 = new TestPerformanceRecordData(
+                StringGenerator.GetString("ClassName1"),
+                StringGenerator.GetString("MethodName1"),
+                DateTime.Now,
+                200,
+                StringGenerator.GetString("CreationStack1")
+                );
+
+            using (var itemSaver = new SqlCommandItemSaverFactory(
+                new EmptyLoggerAdapter(),
+                connectionString.ConnectionString,
+                TrnHelper.MainDatabaseName,
+                TableName,
+                1000000L
+                ))
+            {
+                using (var ebSaver = new EventBasedSaver(
+                    itemSaver,
+                    new EmptyLoggerAdapter(),
+                    false
+                    ))
+                {
+                }
+
+            }
+
+            using (var itemSaver = new SqlCommandItemSaverFactory(
+                new EmptyLoggerAdapter(),
+                connectionString.ConnectionString,
+                TrnHelper.MainDatabaseName,
+                TableName,
+                1000000L
+                ))
+            {
+                using (var ebSaver = new EventBasedSaver(
+                    itemSaver,
+                    new EmptyLoggerAdapter(),
+                    false
+                    ))
+                {
+                    ebSaver.Save(record1);
+                }
+
+            }
+        }
+
+        [TestMethod]
         public void TestSaveItem0()
         {
             var connectionString = new SqlServerDatabaseConnectionString(
@@ -151,12 +214,12 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
                 StringGenerator.GetString("CreationStack")
                 );
 
-            using (var itemSaver = new SqlTextItemSaverFactory(
+            using (var itemSaver = new SqlCommandItemSaverFactory(
                 new EmptyLoggerAdapter(), 
                 connectionString.ConnectionString,
                 TrnHelper.MainDatabaseName,
                 TableName,
-                TimeSpan.FromDays(-1)
+                1000000L
                 ))
             {
                 using (var ebSaver = new EventBasedSaver(
@@ -218,12 +281,12 @@ order
                 new Exception(StringGenerator.GetString("ExceptionMessage"))
                 );
 
-            using (var itemSaver = new SqlTextItemSaverFactory(
+            using (var itemSaver = new SqlCommandItemSaverFactory(
                 new EmptyLoggerAdapter(), 
                 connectionString.ConnectionString,
                 TrnHelper.MainDatabaseName,
                 TableName,
-                TimeSpan.FromDays(-1)
+                1000000L
                 ))
             {
                 using (var ebSaver = new EventBasedSaver(
@@ -310,12 +373,12 @@ order by
             var dataExists1 = false;
             var dataExists2 = false;
 
-            using (var itemSaver = new SqlTextItemSaverFactory(
+            using (var itemSaver = new SqlCommandItemSaverFactory(
                 new EmptyLoggerAdapter(), 
                 connectionString.ConnectionString,
                 TrnHelper.MainDatabaseName,
                 TableName,
-                TimeSpan.FromDays(-1)
+                1000000L
                 ))
             {
                 using (var ebSaver = new EventBasedSaver(

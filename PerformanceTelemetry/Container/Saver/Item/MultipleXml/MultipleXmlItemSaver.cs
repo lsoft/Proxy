@@ -46,13 +46,44 @@ namespace PerformanceTelemetry.Container.Saver.Item.MultipleXml
             _savers = savers;
         }
 
-        public void SaveItem(IPerformanceRecordData item)
+        public void SaveItems(
+            IPerformanceRecordData[] items,
+            int itemCount
+            )
+        {
+            if (items == null)
+            {
+                throw new ArgumentNullException("items");
+            }
+
+            for (var cc = 0; cc < itemCount; cc++)
+            {
+                var item = items[cc];
+
+                SaveItem(item);
+            }
+        }
+
+        public void Commit()
+        {
+            //nothing to do
+        }
+
+        public void Dispose()
+        {
+            //nothing to do
+        }
+
+
+        private void SaveItem(
+            IPerformanceRecordData item
+            )
         {
             if (item == null)
             {
                 throw new ArgumentNullException("item");
             }
-            
+
             //готовим xml
             var xmlString = _xmlPreparator.PrepareXml(item);
 
@@ -74,18 +105,6 @@ namespace PerformanceTelemetry.Container.Saver.Item.MultipleXml
                 }
             }
         }
-
-        public void Commit()
-        {
-            //nothing to do
-        }
-
-        public void Dispose()
-        {
-            //nothing to do
-        }
-
-
 
     }
 }

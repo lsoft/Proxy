@@ -6,15 +6,20 @@ using System.Text;
 using System.Threading;
 using PerformanceTelemetry.Record;
 
-namespace PerformanceTelemetry.Container.Saver.Item.SqlText
+namespace PerformanceTelemetry.Container.Saver.Item.Sql.SqlCommand
 {
-    public class SqlTextItemSaver : IItemSaver
+    public class SqlCommandItemSaver : IItemSaver
     {
-        //после сохранения такого количества итемов пытаться удалять старье
-        private const long BatchBetweenCleanups = 250000L;
+        //после сохранения такого количества батчей пытаться удалять старье
+        private const long ItemCountBetweenCleanups = 25000L;
 
         private readonly ITelemetryLogger _logger;
+
+        //контейнер хешей стека не обязан быть потоко-защищенным, так как обращения к нему идут только из потока сохранения
         private readonly StackIdContainer _stackIdContainer;
+
+        //идентификатор последней существующей строки в СБД
+        private readonly LastRowIdContainer _lastRowIdContainer;
 
         //транзакция к базе данных
         private readonly SqlTransaction _transaction;
@@ -23,32 +28,33 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
         private readonly SqlConnection _connection;
 
         //хешер для поиска соотв. стека
-        private readonly MD5 _md5;
         private readonly string _databaseName;
 
         //корень имени таблиц для сохранения
         private readonly string _tableName;
-        private readonly TimeSpan _cleanupBarrier;
 
-        //индекс итема для очистки
-        private static long _cleanupIndex;
+        //максимальное количество строк, которое может сохраняться в таблице
+        private readonly long _aliveRowsCount;
+
+        //сколько итемов обработано после последней очистки
+        private static long _processedItemCountSinceCleanup;
 
         //заранее скомпилированные команды
-        private readonly SqlCommand _insertItemCommand;
-        private readonly SqlCommand _insertStackCommand;
+        private readonly System.Data.SqlClient.SqlCommand _insertItemCommand;
+        private readonly System.Data.SqlClient.SqlCommand _insertStackCommand;
 
         //признак, что класс утилизирован
         private bool _disposed = false;
 
-        public SqlTextItemSaver(
+        public SqlCommandItemSaver(
             ITelemetryLogger logger,
             StackIdContainer stackIdContainer,
             SqlTransaction transaction,
             SqlConnection connection,
-            MD5 md5,
             string databaseName,
             string tableName,
-            TimeSpan cleanupBarrier
+            long aliveRowsCount,
+            LastRowIdContainer lastRowIdContainer
             )
         {
             if (logger == null)
@@ -67,10 +73,6 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             {
                 throw new ArgumentNullException("connection");
             }
-            if (md5 == null)
-            {
-                throw new ArgumentNullException("md5");
-            }
             if (databaseName == null)
             {
                 throw new ArgumentNullException("databaseName");
@@ -79,31 +81,35 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             {
                 throw new ArgumentNullException("tableName");
             }
-
-            if (cleanupBarrier.Ticks >= 0)
+            if (lastRowIdContainer == null)
             {
-                throw new ArgumentException("cleanupBarrier.Ticks >= 0");
+                throw new ArgumentNullException("lastRowIdContainer");
+            }
+
+            if (aliveRowsCount <= 0)
+            {
+                throw new ArgumentException("aliveRowsCount <= 0");
             }
 
             _logger = logger;
             _stackIdContainer = stackIdContainer;
             _transaction = transaction;
             _connection = connection;
-            _md5 = md5;
             _databaseName = databaseName;
             _tableName = tableName;
-            _cleanupBarrier = cleanupBarrier;
+            _aliveRowsCount = aliveRowsCount;
+            _lastRowIdContainer = lastRowIdContainer;
 
             var insertStackClause = InsertStackClause.Replace(
                 "{_TableName_}",
                 _tableName
                 );
 
-            _insertStackCommand = new SqlCommand(insertStackClause, _connection, _transaction);
-            _insertStackCommand.Parameters.Add("guid", SqlDbType.UniqueIdentifier);
-            _insertStackCommand.Parameters.Add("class_name", SqlDbType.VarChar, SqlTextItemSaverFactory.ClassNameMaxLength);
-            _insertStackCommand.Parameters.Add("method_name", SqlDbType.VarChar, SqlTextItemSaverFactory.MethodNameMaxLength);
+            _insertStackCommand = new System.Data.SqlClient.SqlCommand(insertStackClause, _connection, _transaction);
+            _insertStackCommand.Parameters.Add("class_name", SqlDbType.VarChar, SqlHelper.ClassNameMaxLength);
+            _insertStackCommand.Parameters.Add("method_name", SqlDbType.VarChar, SqlHelper.MethodNameMaxLength);
             _insertStackCommand.Parameters.Add("creation_stack", SqlDbType.VarChar, -1);
+            _insertStackCommand.Parameters.Add("key", SqlDbType.VarChar, -1);
             _insertStackCommand.Prepare();
 
             var insertItemClause = InsertItemClause.Replace(
@@ -111,10 +117,11 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
                 _tableName
                 );
 
-            _insertItemCommand = new SqlCommand(insertItemClause, _connection, _transaction);
+            _insertItemCommand = new System.Data.SqlClient.SqlCommand(insertItemClause, _connection, _transaction);
+            _insertItemCommand.Parameters.Add("id", SqlDbType.BigInt);
             _insertItemCommand.Parameters.Add("id_parent", SqlDbType.BigInt);
             _insertItemCommand.Parameters.Add("start_time", SqlDbType.DateTime);
-            _insertItemCommand.Parameters.Add("exception_message", SqlDbType.VarChar, SqlTextItemSaverFactory.ExceptionMessageMaxLength);
+            _insertItemCommand.Parameters.Add("exception_message", SqlDbType.VarChar, SqlHelper.ExceptionMessageMaxLength);
             _insertItemCommand.Parameters.Add("exception_stack", SqlDbType.VarChar, -1);
             _insertItemCommand.Parameters.Add("time_interval", SqlDbType.Float);
             _insertItemCommand.Parameters.Add("id_stack", SqlDbType.Int);
@@ -122,41 +129,67 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
             _insertItemCommand.Prepare();
         }
 
-        public void SaveItem(IPerformanceRecordData item)
+        public void SaveItems(
+            IPerformanceRecordData[] items,
+            int itemCount
+            )
         {
-            if (item == null)
+            if (items == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException("items");
             }
 
             //проверяем не настала ли пора удалять старье
-            if (Interlocked.Increment(ref _cleanupIndex) == BatchBetweenCleanups)
+            CheckAndPerformCleanupIfNecessary();
+
+            //сохраняем итемы
+            for (var cc = 0; cc < itemCount; cc++)
             {
-                //надо очищать
-                SqlTextItemSaverFactory.DoCleanup(
-                    _connection,
-                    _transaction,
-                    _databaseName,
-                    _tableName,
-                    _cleanupBarrier
+                var item = items[cc];
+
+                if (item == null)
+                {
+                    throw new InvalidOperationException("item");
+                }
+
+                this.SaveItem(
+                    null,
+                    item
                     );
 
-                Interlocked.Exchange(ref _cleanupIndex, 0L);
+                Interlocked.Increment(ref _processedItemCountSinceCleanup);
             }
-
-
-            this.SaveItem(
-                null,
-                item
-                );
         }
 
         public void Commit()
         {
             if (!_disposed)
             {
-                _insertItemCommand.Dispose();
-                _insertStackCommand.Dispose();
+                try
+                {
+                    _insertItemCommand.Dispose();
+                }
+                catch (Exception excp)
+                {
+                    _logger.LogHandledException(
+                        this.GetType(),
+                        "Ошибка _insertItemCommand.Dispose()",
+                        excp
+                        );
+                }
+
+                try
+                {
+                    _insertStackCommand.Dispose();
+                }
+                catch (Exception excp)
+                {
+                    _logger.LogHandledException(
+                        this.GetType(),
+                        "Ошибка _insertStackCommand.Dispose()",
+                        excp
+                        );
+                }
 
                 try
                 {
@@ -251,6 +284,24 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
 
         #region private code
 
+        private void CheckAndPerformCleanupIfNecessary()
+        {
+            if (Interlocked.Read(ref _processedItemCountSinceCleanup) >= ItemCountBetweenCleanups)
+            {
+                //надо очищать
+                SqlHelper.DoCleanup(
+                    _connection,
+                    _transaction,
+                    _databaseName,
+                    _tableName,
+                    _aliveRowsCount,
+                    _logger
+                    );
+
+                Interlocked.Exchange(ref _processedItemCountSinceCleanup, 0L);
+            }
+        }
+
         private long SaveItem(
             long? parentId,
             IPerformanceRecordData item
@@ -263,52 +314,53 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
 
             //проверяем и вставляем стек, если необходимо
 
-            var combined = string.Format("{0}.{1}", item.ClassName, item.MethodName);
-            var combinedHash = _md5.ComputeHash(Encoding.UTF8.GetBytes(combined));
-            var combinedGuid = new Guid(combinedHash);
+            var stackId = _stackIdContainer.AddIfNecessaryAndReturnId(
+                item,
+                (itemKey, workItem) =>
+                {
+                    //такого стека нет, вставляем
 
-            int stackIndex;
-            if (!_stackIdContainer.TryGet(combinedGuid, out stackIndex))
-            {
-                //такого стека нет, вставляем
+                    _insertStackCommand.Parameters["class_name"].Value = CutOff(workItem.ClassName, SqlHelper.ClassNameMaxLength);
+                    _insertStackCommand.Parameters["method_name"].Value = CutOff(workItem.MethodName, SqlHelper.MethodNameMaxLength);
+                    _insertStackCommand.Parameters["creation_stack"].Value = workItem.CreationStack;
+                    _insertStackCommand.Parameters["key"].Value = itemKey;
 
-                _insertStackCommand.Parameters["guid"].Value = combinedGuid;
-                _insertStackCommand.Parameters["class_name"].Value = CutOff(item.ClassName, SqlTextItemSaverFactory.ClassNameMaxLength);
-                _insertStackCommand.Parameters["method_name"].Value = CutOff(item.MethodName, SqlTextItemSaverFactory.MethodNameMaxLength);
-                _insertStackCommand.Parameters["creation_stack"].Value = item.CreationStack;
+                    var workStackId = (int)_insertStackCommand.ExecuteScalar();
 
-                stackIndex = (int)_insertStackCommand.ExecuteScalar();
+                    return
+                        workStackId;
+                }
+                );
 
-                _stackIdContainer.Add(combinedGuid, stackIndex);
-            }
-
+            var itemId = _lastRowIdContainer.GetIdForNewRow();
 
             //вставляем остальные данные
-            var exceptionMessage = item.Exception != null ? (object) CutOff(item.Exception.Message, SqlTextItemSaverFactory.ExceptionMessageMaxLength) : null;
+            var exceptionMessage = item.Exception != null ? (object)CutOff(item.Exception.Message, SqlHelper.ExceptionMessageMaxLength) : null;
             var exceptionStack = item.Exception != null ? (object) item.Exception.StackTrace : null;
             var exceptionFullText = item.Exception != null ? (object) Exception2StringHelper.ToFullString(item.Exception) : null;
 
-            _insertItemCommand.Parameters["id_parent"].Value = (object) parentId ?? DBNull.Value;
+            _insertItemCommand.Parameters["id"].Value = itemId;
+            _insertItemCommand.Parameters["id_parent"].Value = (object)parentId ?? DBNull.Value;
             _insertItemCommand.Parameters["start_time"].Value = item.StartTime;
             _insertItemCommand.Parameters["exception_message"].Value = exceptionMessage ?? DBNull.Value;
             _insertItemCommand.Parameters["exception_stack"].Value = exceptionStack ?? DBNull.Value;
             _insertItemCommand.Parameters["time_interval"].Value = item.TimeInterval;
-            _insertItemCommand.Parameters["id_stack"].Value = stackIndex;
+            _insertItemCommand.Parameters["id_stack"].Value = stackId;
             _insertItemCommand.Parameters["exception_full_text"].Value = exceptionFullText ?? DBNull.Value;
 
-            var result = (long)  _insertItemCommand.ExecuteScalar();
+            _insertItemCommand.ExecuteNonQuery();
 
             var children = item.GetChildren();
             if (children != null)
             {
                 foreach (var child in children)
                 {
-                    SaveItem(result, child);
+                    SaveItem(itemId, child);
                 }
             }
 
             return
-                result;
+                itemId;
         }
 
         private string CutOff(string message, int maxLength)
@@ -341,18 +393,17 @@ namespace PerformanceTelemetry.Container.Saver.Item.SqlText
 
         private const string InsertStackClause = @"
 insert into [dbo].[{_TableName_}Stack]
-    (  guid,  class_name,  method_name,  creation_stack )
+    (  class_name,  method_name,  creation_stack, [key] )
 output inserted.$identity 
 values
-    ( @guid, @class_name, @method_name, @creation_stack )
+    ( @class_name, @method_name, @creation_stack, @key )
 ";
 
         private const string InsertItemClause = @"
 insert into [dbo].[{_TableName_}]
-    ( date_commit,  id_parent,  start_time,  exception_message,  exception_stack,  time_interval,  id_stack,  exception_full_text)
-output inserted.$identity 
+    ( date_commit,  id, id_parent,  start_time,  exception_message,  exception_stack,  time_interval,  id_stack,  exception_full_text)
 values
-    (   GETDATE(), @id_parent, @start_time, @exception_message, @exception_stack, @time_interval, @id_stack, @exception_full_text);
+    (   GETDATE(), @id, @id_parent, @start_time, @exception_message, @exception_stack, @time_interval, @id_stack, @exception_full_text);
 
 --select SCOPE_IDENTITY();
 ";

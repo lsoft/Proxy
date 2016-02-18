@@ -6,8 +6,43 @@ namespace ProxyNinjectDemostration.ProxyRelated.Saver
 {
     public class ConsoleSaver : IItemSaver
     {
-        public void SaveItem(IPerformanceRecordData item)
+        public void SaveItems(
+            IPerformanceRecordData[] items,
+            int itemCount
+            )
         {
+            if (items == null)
+            {
+                throw new ArgumentNullException("items");
+            }
+
+            for (var cc = 0; cc < itemCount; cc++)
+            {
+                var item = items[cc];
+
+                SaveItem(item);
+            }
+        }
+
+        public void Commit()
+        {
+            //nothing to do
+        }
+
+        public void Dispose()
+        {
+            //nothing to do
+        }
+
+        private void SaveItem(
+            IPerformanceRecordData item
+            )
+        {
+            if (item == null)
+            {
+                throw new ArgumentNullException("item");
+            }
+
             var children = item.GetChildren();
 
             Console.WriteLine(
@@ -21,14 +56,5 @@ namespace ProxyNinjectDemostration.ProxyRelated.Saver
                 );
         }
 
-        public void Commit()
-        {
-            //nothing to do
-        }
-
-        public void Dispose()
-        {
-            //nothing to do
-        }
     }
 }

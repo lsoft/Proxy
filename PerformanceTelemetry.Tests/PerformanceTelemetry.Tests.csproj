@@ -82,7 +82,8 @@
     <Compile Include="PerformanceTelemetryTests\PerformanceRecord\UnitTest3.cs" />
     <Compile Include="PerformanceTelemetryTests\PerformanceRecord\UnitTest4.cs" />
     <Compile Include="PerformanceTelemetryTests\PerformanceRecord\UnitTest5.cs" />
-    <Compile Include="PerformanceTelemetryTests\SaverTests\SqlTextSaverFixture.cs" />
+    <Compile Include="PerformanceTelemetryTests\SaverTests\SqlBatchSaverFixture.cs" />
+    <Compile Include="PerformanceTelemetryTests\SaverTests\SqlCommandSaverFixture.cs" />
     <Compile Include="PerformanceTelemetryTests\SaverTests\StringGenerator.cs" />
     <Compile Include="PerformanceTelemetryTests\SaverTests\TestPerformanceRecordData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
