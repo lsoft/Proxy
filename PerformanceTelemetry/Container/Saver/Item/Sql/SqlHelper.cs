@@ -522,7 +522,7 @@ where
 	id < (
 		select
 			min(id) min_id
-		from [dbo].[{_TableName_}] ) + {_Barrier_}
+		from [dbo].[{_TableName_}] ) - {_Barrier_}
 ";
 
         private const string ReadStackTableClause = @"
