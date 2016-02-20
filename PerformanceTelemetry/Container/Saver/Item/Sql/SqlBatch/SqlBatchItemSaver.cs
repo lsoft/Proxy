@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Security.Cryptography;
 using System.Text;
@@ -19,6 +20,9 @@ namespace PerformanceTelemetry.Container.Saver.Item.Sql.SqlBatch
         //контейнер хешей стека не обязан быть потоко-защищенным, так как обращения к нему идут только из потока сохранения
         private readonly StackIdContainer _stackIdContainer;
 
+        //идентификатор последней существующей строки в СБД
+        private readonly LastRowIdContainer _lastRowIdContainer;
+
         //транзакция к базе данных
         private readonly SqlTransaction _transaction;
         
@@ -32,9 +36,6 @@ namespace PerformanceTelemetry.Container.Saver.Item.Sql.SqlBatch
 
         //максимальное количество строк, которое может сохраняться в таблице
         private readonly long _aliveRowsCount;
-
-        //идентификатор последней существующей строки в СБД
-        private readonly LastRowIdContainer _lastRowIdContainer;
 
         //сколько итемов обработано после последней очистки
         private static long _processedItemCountSinceCleanup;
@@ -51,7 +52,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.Sql.SqlBatch
         //признак, что класс утилизирован
         private bool _disposed = false;
 
-        public SqlBatchItemSaver(
+        internal SqlBatchItemSaver(
             ITelemetryLogger logger,
             StackIdContainer stackIdContainer,
             string connectionString,
@@ -551,5 +552,4 @@ values
         #endregion
 
     }
-
 }

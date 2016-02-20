@@ -72,6 +72,8 @@ namespace PerformanceTelemetry.Container
                 {
                     var result = new StackTrace(2, true).ToString(); //двойка подобрана так, чтобы "служебные" фреймы перформанса не попадали в стек
 
+                    result = string.IsInterned(result) ?? result; //memory economy
+
                     return
                         result;
                 }

@@ -20,10 +20,6 @@ namespace PerformanceTelemetry.Container.Saver.Item.Sql.SqlCommand
         private readonly string _tableName;
         private readonly long _aliveRowsCount;
 
-        //подключение к базе данных
-        private readonly SqlConnection _connection;
-
-
         public SqlCommandItemSaverFactory(
             ITelemetryLogger logger,
             string connectionString,
@@ -59,88 +55,66 @@ namespace PerformanceTelemetry.Container.Saver.Item.Sql.SqlCommand
             _tableName = tableName;
             _aliveRowsCount = aliveRowsCount;
 
-            _connection = new SqlConnection(_connectionString);
-            _connection.Open();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
 
-            long lastRowId;
-            SqlHelper.DoPreparation(
-                _connection,
-                null,
-                _databaseName,
-                _tableName,
-                _logger,
-                out lastRowId
-                );
+                long lastRowId;
+                SqlHelper.DoPreparation(
+                    connection,
+                    null,
+                    _databaseName,
+                    _tableName,
+                    _logger,
+                    out lastRowId
+                    );
 
-            SqlHelper.DoCleanup(
-                _connection,
-                null,
-                _databaseName,
-                _tableName,
-                _aliveRowsCount,
-                _logger
-                );
+                SqlHelper.DoCleanup(
+                    connection,
+                    null,
+                    _databaseName,
+                    _tableName,
+                    _aliveRowsCount,
+                    _logger
+                    );
 
-            _stackIdContainer = SqlHelper.ReadStackTable(
-                _connection,
-                null,
-                _databaseName,
-                _tableName,
-                _logger
-                );
+                _stackIdContainer = SqlHelper.ReadStackTable(
+                    connection,
+                    null,
+                    _databaseName,
+                    _tableName,
+                    _logger
+                    );
 
-            _lastRowIdContainer = new LastRowIdContainer(lastRowId);
+                _lastRowIdContainer = new LastRowIdContainer(lastRowId);
+            }
         }
 
         public IItemSaver CreateItemSaver()
         {
-            var transaction = _connection.BeginTransaction(IsolationLevel.Snapshot);
+            var r = new SqlCommandItemSaver(
+                _logger,
+                _stackIdContainer,
+                _connectionString,
+                _databaseName,
+                _tableName,
+                _aliveRowsCount,
+                _lastRowIdContainer
+                );
 
-            try
-            {
-                var r = new SqlCommandItemSaver(
-                    _logger,
-                    _stackIdContainer,
-                    transaction,
-                    _connection,
-                    _databaseName,
-                    _tableName,
-                    _aliveRowsCount,
-                    _lastRowIdContainer
-                    );
-
-                return
-                    r;
-            }
-            catch
-            {
-                transaction.Dispose();
-                throw;
-            }
+            return
+                r;
         }
 
         public void Dispose()
         {
-            if (this._connection != null)
-            {
-                try
-                {
-                    this._connection.Dispose();
-                }
-                catch (Exception excp)
-                {
-                    _logger.LogHandledException(this.GetType(), "Ошибка утилизации конекшена", excp);
-
-                }
-            }
-
             try
             {
                 _stackIdContainer.Dispose();
             }
             catch (Exception excp)
             {
-                _logger.LogHandledException(this.GetType(), "Ошибка утилизации хэш алгоритма", excp);
+                _logger.LogHandledException(this.GetType(), "Ошибка утилизации контейнера стеков", excp);
 
             }
         }

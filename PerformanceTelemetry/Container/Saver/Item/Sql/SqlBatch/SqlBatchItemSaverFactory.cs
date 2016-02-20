@@ -113,7 +113,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.Sql.SqlBatch
             }
             catch (Exception excp)
             {
-                _logger.LogHandledException(this.GetType(), "Ошибка утилизации хэш алгоритма", excp);
+                _logger.LogHandledException(this.GetType(), "Ошибка утилизации контейнера стеков", excp);
 
             }
         }

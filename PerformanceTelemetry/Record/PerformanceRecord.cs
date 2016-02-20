@@ -149,7 +149,9 @@ namespace PerformanceTelemetry.Record
 
             Active = true;
             _diedChildren = new List<IPerformanceRecord>();
-            _creationStack = new StackTrace(1, true).ToString(); //единица подобрана так, чтобы "служебные" фреймы перформанса не попадали в стек
+
+            var creationStack = new StackTrace(1, true).ToString(); //единица подобрана так, чтобы "служебные" фреймы перформанса не попадали в стек
+            _creationStack = string.IsInterned(creationStack) ?? creationStack; //memory economy
 
             //Запоминаем время
             _startTime = timerFactory.GetCurrentTime();

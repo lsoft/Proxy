@@ -43,7 +43,7 @@ namespace PerformanceTelemetry.Container.Saver
         private readonly ManualResetEvent _shouldStop = new ManualResetEvent(false);
 
         //событие, сигнализирующее о том, что появилась новая запись на сохранение
-        private readonly AutoResetEvent _newRecord = new AutoResetEvent(false);
+        private readonly AutoResetEvent _doProcess = new AutoResetEvent(false);
 
         //количество ошибок при сохранении
         private int _errorCounter = 0;
@@ -112,7 +112,7 @@ namespace PerformanceTelemetry.Container.Saver
                 {
                     //итемов набралось на батч
 
-                    _newRecord.Set();
+                    _doProcess.Set();
                 }
             }
         }
@@ -129,7 +129,7 @@ namespace PerformanceTelemetry.Container.Saver
                 }
 
                 _shouldStop.Dispose();
-                _newRecord.Dispose();
+                _doProcess.Dispose();
 
                 _disposed = true;
             }
@@ -153,7 +153,7 @@ namespace PerformanceTelemetry.Container.Saver
                     new WaitHandle[]
                     {
                         _shouldStop,
-                        _newRecord
+                        _doProcess
                     },
                     BatchWaitTimeoutMsec
                 ); //при смене порядка эвентов надо менять код, которые юзает waitIndex
@@ -162,9 +162,9 @@ namespace PerformanceTelemetry.Container.Saver
                 //это нужно, так как если срабатывают оба события очень быстро:
                 //using (var saver = new SomeSaver(...))
                 //{
-                //  saver.Save(...); <-- рейзим _newRecord евент
+                //  saver.Save(...); <-- рейзим _doProcess евент
                 //} <-- почти мгновенно рейзим _shouldStop евент
-                //то трид не успевает проснуться между активацией _shouldStop и _newRecord
+                //то трид не успевает проснуться между активацией _shouldStop и _doProcess
                 //а просыпается уже после сработки обоих ивентов, и сразу выходит, не сохранив события
                 //это в принципе не очень страшная ситуация в продакшене, так как потеря одного события, которое
                 //произошло в последние мгновения перед закрытием телеметрии, не страшна.

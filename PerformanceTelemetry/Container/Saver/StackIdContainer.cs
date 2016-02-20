@@ -90,7 +90,7 @@ namespace PerformanceTelemetry.Container.Saver
             {
                 throw new ArgumentNullException("methodName");
             }
-
+            
             return
                 string.Format(
                     "{0}.{1}",

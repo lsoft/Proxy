@@ -521,7 +521,7 @@ delete from
 where
 	id < (
 		select
-			min(id) min_id
+			max(id) max_id
 		from [dbo].[{_TableName_}] ) - {_Barrier_}
 ";
 

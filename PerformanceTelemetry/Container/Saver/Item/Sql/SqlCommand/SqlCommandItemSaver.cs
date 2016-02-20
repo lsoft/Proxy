@@ -46,11 +46,10 @@ namespace PerformanceTelemetry.Container.Saver.Item.Sql.SqlCommand
         //признак, что класс утилизирован
         private bool _disposed = false;
 
-        public SqlCommandItemSaver(
+        internal SqlCommandItemSaver(
             ITelemetryLogger logger,
             StackIdContainer stackIdContainer,
-            SqlTransaction transaction,
-            SqlConnection connection,
+            string connectionString,
             string databaseName,
             string tableName,
             long aliveRowsCount,
@@ -65,13 +64,9 @@ namespace PerformanceTelemetry.Container.Saver.Item.Sql.SqlCommand
             {
                 throw new ArgumentNullException("stackIdContainer");
             }
-            if (transaction == null)
+            if (connectionString == null)
             {
-                throw new ArgumentNullException("transaction");
-            }
-            if (connection == null)
-            {
-                throw new ArgumentNullException("connection");
+                throw new ArgumentNullException("connectionString");
             }
             if (databaseName == null)
             {
@@ -93,13 +88,55 @@ namespace PerformanceTelemetry.Container.Saver.Item.Sql.SqlCommand
 
             _logger = logger;
             _stackIdContainer = stackIdContainer;
-            _transaction = transaction;
-            _connection = connection;
             _databaseName = databaseName;
             _tableName = tableName;
             _aliveRowsCount = aliveRowsCount;
             _lastRowIdContainer = lastRowIdContainer;
 
+            var connection = new SqlConnection(connectionString);
+            connection.Open();
+            try
+            {
+                var transaction = connection.BeginTransaction(IsolationLevel.Snapshot);
+
+                _connection = connection;
+                _transaction = transaction;
+            }
+            catch
+            {
+                #region close connection
+
+                if (this._connection != null)
+                {
+                    try
+                    {
+                        this._connection.Close();
+                    }
+                    catch (Exception excp)
+                    {
+                        _logger.LogHandledException(this.GetType(), "Ошибка закрытия конекшена в конструкторе", excp);
+
+                    }
+                }
+
+                if (this._connection != null)
+                {
+                    try
+                    {
+                        this._connection.Dispose();
+                    }
+                    catch (Exception excp)
+                    {
+                        _logger.LogHandledException(this.GetType(), "Ошибка утилизации конекшена в конструкторе", excp);
+
+                    }
+                }
+
+                #endregion
+
+                throw;
+            } 
+            
             var insertStackClause = InsertStackClause.Replace(
                 "{_TableName_}",
                 _tableName
@@ -217,6 +254,32 @@ namespace PerformanceTelemetry.Container.Saver.Item.Sql.SqlCommand
                         );
                 }
 
+                if (this._connection != null)
+                {
+                    try
+                    {
+                        this._connection.Close();
+                    }
+                    catch (Exception excp)
+                    {
+                        _logger.LogHandledException(this.GetType(), "Ошибка закрытия конекшена", excp);
+
+                    }
+                }
+
+                if (this._connection != null)
+                {
+                    try
+                    {
+                        this._connection.Dispose();
+                    }
+                    catch (Exception excp)
+                    {
+                        _logger.LogHandledException(this.GetType(), "Ошибка утилизации конекшена", excp);
+
+                    }
+                }
+
                 _disposed = true;
             }
         }
@@ -277,6 +340,31 @@ namespace PerformanceTelemetry.Container.Saver.Item.Sql.SqlCommand
                         );
                 }
 
+                if (this._connection != null)
+                {
+                    try
+                    {
+                        this._connection.Close();
+                    }
+                    catch (Exception excp)
+                    {
+                        _logger.LogHandledException(this.GetType(), "Ошибка закрытия конекшена", excp);
+
+                    }
+                }
+
+                if (this._connection != null)
+                {
+                    try
+                    {
+                        this._connection.Dispose();
+                    }
+                    catch (Exception excp)
+                    {
+                        _logger.LogHandledException(this.GetType(), "Ошибка утилизации конекшена", excp);
+
+                    }
+                }
 
                 _disposed = true;
             }
