@@ -69,15 +69,6 @@ namespace PerformanceTelemetry.Container.Saver.Item.Sql.SqlCommand
                     out lastRowId
                     );
 
-                SqlHelper.DoCleanup(
-                    connection,
-                    null,
-                    _databaseName,
-                    _tableName,
-                    _aliveRowsCount,
-                    _logger
-                    );
-
                 _stackIdContainer = SqlHelper.ReadStackTable(
                     connection,
                     null,
