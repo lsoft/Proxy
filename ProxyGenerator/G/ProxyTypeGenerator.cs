@@ -1,5 +1,6 @@
 ﻿using System;
 using System.CodeDom.Compiler;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -18,13 +19,11 @@ namespace ProxyGenerator.G
     /// Генератор прокси-объектов
     /// Один должен быть создан в одном экземпляре на  каждый ТИП фабрики полезной нагрузки
     /// </summary>
-    public class ProxyTypeGenerator : IProxyTypeGenerator, IDisposable
+    public class ProxyTypeGenerator : IProxyTypeGenerator
     {
         private readonly IProxyPayloadFactory _payloadFactory;
-        private readonly Dictionary<ProxyKey, Type> _preCompiledCache;
-        private readonly ReaderWriterLockSlim _locker;
+        private readonly ConcurrentDictionary<ProxyKey, Type> _preCompiledCache;
 
-        private bool _disposed = false;
 
         /// <summary>
         /// Хранилище сгенерированных сборок, чтобы их не добавлять в референсы новых генерируемых сборок
@@ -48,8 +47,7 @@ namespace ProxyGenerator.G
             }
 
             _payloadFactory = payloadFactory;
-            _preCompiledCache = new Dictionary<ProxyKey, Type>();
-            _locker = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+            _preCompiledCache = new ConcurrentDictionary<ProxyKey, Type>();
         }
 
         /// <summary>
@@ -121,8 +119,8 @@ namespace ProxyGenerator.G
             var key = new ProxyKey(ti, tc);
 
             //смотрим в кеш, вдруг уже есть
-            var proxyType = GetProxyTypeFromCache(key);
-            if (proxyType == null)
+            Type proxyType;
+            if (!_preCompiledCache.TryGetValue(key, out proxyType))
             {
                 //в кеше не найдено, необходимо компилировать
 
@@ -131,25 +129,16 @@ namespace ProxyGenerator.G
                     wrapResolver,
                     _payloadFactory,
                     generatedAssemblyName,
-                    additionalReferencedAssembliesLocation);
+                    additionalReferencedAssembliesLocation
+                    );
 
                 //пытаемся сохранить в кеш
-                //если в кеше уже есть версия этого прокситипа, то метод вернет ее, так как в кеше более ранняя версия
+                //если в кеше уже есть версия этого прокси-типа, то метод вернет ее, так как в кеше более ранняя версия
                 proxyType = TryToSaveProxyTypeToCache(key, type);
             }
 
 
             return proxyType;
-        }
-
-        public void Dispose()
-        {
-            if (!_disposed)
-            {
-                _disposed = true;
-
-                _locker.Dispose();
-            }
         }
 
         #region private
@@ -162,25 +151,13 @@ namespace ProxyGenerator.G
         {
             Type result;
 
-            _locker.EnterWriteLock();
-            try
+            if (_preCompiledCache.TryAdd(key, proxyType))
             {
-                if (!_preCompiledCache.ContainsKey(key))
-                {
-                    //не добавлено, сохраняем
-                    _preCompiledCache.Add(key, proxyType);
-
-                    result = proxyType;
-                }
-                else
-                {
-                    //найдено, возвращаем ранее откомпилированную версию!
-                    result = _preCompiledCache[key];
-                }
+                result = proxyType;
             }
-            finally
+            else
             {
-                _locker.ExitWriteLock();
+                result = _preCompiledCache[key];
             }
 
             return result;
@@ -193,18 +170,7 @@ namespace ProxyGenerator.G
         {
             Type result = null;
 
-            _locker.EnterReadLock();
-            try
-            {
-                if (_preCompiledCache.ContainsKey(key))
-                {
-                    result = _preCompiledCache[key];
-                }
-            }
-            finally
-            {
-                _locker.ExitReadLock();
-            }
+            _preCompiledCache.TryGetValue(key, out result);
 
             return result;
         }
@@ -275,10 +241,14 @@ namespace ProxyGenerator.G
             #region properties
 
             //получаем все проперти
-            var tpList = ExtractAllPropertiesFromInterfaceHierarchy(ti);
+            var tpList = new List<MethodInfo>();
+            ExtractAllPropertiesFromInterfaceHierarchy(
+                ti,
+                tpList
+                );
 
             //группируем проперти
-            var pdList = tpList.ToList().ConvertAll(j => new PropertyDefinition(j));
+            var pdList = tpList.ConvertAll(j => new PropertyDefinition(j));
 
             var tppDict = new Dictionary<string, PairProperty>();
             foreach (var item in pdList)
@@ -441,9 +411,10 @@ namespace ProxyGenerator.G
 
             #endregion
 
-            #region compile with .NET 4.5
-
             Assembly compiledAssembly;
+
+            #region compile with .NET 4.0
+
             using (var compiler = new CSharpCodeProvider(new Dictionary<String, String> { { "CompilerVersion", "v4.0" } }))
             {
                 var compilerParameters = new CompilerParameters();
@@ -505,10 +476,10 @@ namespace ProxyGenerator.G
                             "", (text, error) => text + error.Line + ": " + error.ErrorText + "\r\n"));
                 }
 
-                #endregion
-
                 compiledAssembly = compilerResults.CompiledAssembly;
             }
+
+            #endregion
 
             _compiledAssemblyContainer.Add(compiledAssembly);
 
@@ -517,47 +488,39 @@ namespace ProxyGenerator.G
             return type;
         }
 
-        private static MethodInfo[] ExtractAllPropertiesFromInterfaceHierarchy(Type ti)
+        private static void ExtractAllPropertiesFromInterfaceHierarchy(
+            Type ti,
+            List<MethodInfo> result 
+            )
         {
-            var tdList = ti.GetMethods().Where(mi => PropertyDefinition.IsMethodInfoProperty(mi)).ToList();
+            result.AddRange(
+                ti
+                    .GetMethods()
+                    .Where(mi => PropertyDefinition.IsMethodInfoProperty(mi))
+                );
 
             var baseInterfaceList = ti.GetInterfaces();
             if (baseInterfaceList != null && baseInterfaceList.Length > 0)
             {
                 foreach (var bi in baseInterfaceList)
                 {
-                    var derivedTdList = ExtractAllPropertiesFromInterfaceHierarchy(bi);
-
-                    tdList.AddRange(derivedTdList);
+                    ExtractAllPropertiesFromInterfaceHierarchy(
+                        bi,
+                        result
+                        );
                 }
             }
-
-            return tdList.ToArray();
         }
 
-        private static MethodInfo[] ExtractAllMethodsFromInterface(Type ti)
+        private static IEnumerable<MethodInfo> ExtractAllMethodsFromInterface(Type ti)
         {
-            var timList = ti.GetMethods().Where(mi => !PropertyDefinition.IsMethodInfoProperty(mi)).ToList();
+            var timList = ti
+                .GetMethods()
+                .Where(mi => !PropertyDefinition.IsMethodInfoProperty(mi))
+                ;
 
-            return timList.ToArray();
-        }
-
-        private static MethodInfo[] ExtractAllMethodsFromInterfaceHierarchy(Type ti)
-        {
-            var timList = ti.GetMethods().Where(mi => !PropertyDefinition.IsMethodInfoProperty(mi)).ToList();
-
-            var baseInterfaceList = ti.GetInterfaces();
-            if (baseInterfaceList != null && baseInterfaceList.Length > 0)
-            {
-                foreach (var bi in baseInterfaceList)
-                {
-                    var derivedTimList = bi.GetMethods().Where(mi => !PropertyDefinition.IsMethodInfoProperty(mi)).ToList();
-
-                    timList.AddRange(derivedTimList);
-                }
-            }
-
-            return timList.ToArray();
+            return
+                timList;
         }
 
         private const string NonProxyMethod = @"

@@ -10,7 +10,8 @@ namespace ProxyGenerator.G
         private readonly DateTime _proxyTimeSuffix;
 
         public ProxySourceGenerator(
-            DateTime proxyTimeSuffix)
+            DateTime proxyTimeSuffix
+            )
         {
             _proxyTimeSuffix = proxyTimeSuffix;
         }
