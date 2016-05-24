@@ -62,7 +62,7 @@
     <Compile Include="ProxyRelated\ErrorLogger\ConsoleTelemetryLogger.cs" />
     <Compile Include="ProxyRelated\ErrorContext\EmptyContextFactory.cs" />
     <Compile Include="ProxyRelated\ErrorContext\EmptyErrorContext.cs" />
-    <Compile Include="ProxyRelated\GeneratorProvider.cs" />
+    <Compile Include="ProxyRelated\ProxyModule.cs" />
     <Compile Include="ApplicationThings\Logger\IConsoleLogger.cs" />
     <Compile Include="ApplicationThings\Class1\IInterface1ThatNeedToBeProxied.cs" />
     <Compile Include="Program.cs" />

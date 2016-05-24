@@ -14,28 +14,21 @@ namespace ProxyGenerator.C
     /// </summary>
     public class StandaloneProxyConstructor : IProxyConstructor
     {
-        private readonly IProxyPayloadFactory _payloadFactory;
         private readonly IProxyTypeGenerator _proxyTypeGenerator;
 
         /// <summary>
         /// Создание прокси-конструктора
         /// </summary>
-        /// <param name="payloadFactory">Фабрика полезной нагрузки прокси-объекта</param>
         /// <param name="proxyTypeGenerator">Генератор прокси-типа</param>
         public StandaloneProxyConstructor(
-            IProxyPayloadFactory payloadFactory,
-            IProxyTypeGenerator proxyTypeGenerator)
+            IProxyTypeGenerator proxyTypeGenerator
+            )
         {
-            if (payloadFactory == null)
-            {
-                throw new ArgumentNullException("payloadFactory");
-            }
             if (proxyTypeGenerator == null)
             {
                 throw new ArgumentNullException("proxyTypeGenerator");
             }
 
-            _payloadFactory = payloadFactory;
             _proxyTypeGenerator = proxyTypeGenerator;
         }
 
@@ -44,23 +37,35 @@ namespace ProxyGenerator.C
         /// </summary>
         /// <typeparam name="TInterface">Интерфейс, выдаваемый наружу</typeparam>
         /// <typeparam name="TClass">Тип оборачиваемого объекта</typeparam>
+        /// <param name="proxyPayloadFactory">Фабрика объектов полезной нагрузки</param>
         /// <param name="wrapResolver">Делегат-определитель, надо ли проксить метод</param>
         /// <param name="args">Аргументы для конструктора объекта</param>
         /// <returns>Сформированный прокси, которые с помощью интерфейса прикидывается оборачиваемым объектом</returns>
         public TInterface CreateProxy<TInterface, TClass>(
+            IProxyPayloadFactory proxyPayloadFactory,
             WrapResolverDelegate wrapResolver,
             params object[] args
             )
             where TInterface : class
             where TClass : class
         {
-            var proxyType = _proxyTypeGenerator.CreateProxyType<TInterface, TClass>(
+            if (proxyPayloadFactory == null)
+            {
+                throw new ArgumentNullException("proxyPayloadFactory");
+            }
+
+            var p = new Parameters(
+                proxyPayloadFactory,
                 wrapResolver
+                );
+
+            var proxyType = _proxyTypeGenerator.CreateProxyType<TInterface, TClass>(
+                p
                 );
 
             var constructorArgs = new List<object>
                                   {
-                                      _payloadFactory
+                                      proxyPayloadFactory
                                   };
             constructorArgs.AddRange(args);
 
@@ -76,10 +81,12 @@ namespace ProxyGenerator.C
         /// </summary>
         /// <typeparam name="TInterface">Интерфейс, выдаваемый наружу</typeparam>
         /// <typeparam name="TClass">Тип оборачиваемого объекта</typeparam>
+        /// <param name="proxyPayloadFactory">Фабрика объектов полезной нагрузки</param>
         /// <param name="attributeType">Тип атрибута, которым помечены мемберы, годные к записи телеметрии</param>
         /// <param name="args">Аргументы для конструктора объекта</param>
         /// <returns>Сформированный прокси, которые с помощью интерфейса прикидывается оборачиваемым объектом</returns>
         public TInterface CreateProxy<TInterface, TClass>(
+            IProxyPayloadFactory proxyPayloadFactory,
             Type attributeType,
             params object[] args)
                 where TInterface : class
@@ -87,6 +94,7 @@ namespace ProxyGenerator.C
         {
             return
                 CreateProxy<TInterface, TClass>(
+                    proxyPayloadFactory,
                     (mi) => AttributeWrapMethodResolver.NeedToWrap(attributeType, mi),
                     args
                     );

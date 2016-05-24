@@ -93,10 +93,11 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests.Generic.TargetClass
                     dispose = true;
                 });
 
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator(payloadFactory);
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(payloadFactory, generator);
+            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
+            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
 
             var proxy = constructor.CreateProxy<IClassMock17, ClassMock17<T>>(
+                payloadFactory,
                 typeof(TestWrapWithProxyAttribute),
                 t);
 

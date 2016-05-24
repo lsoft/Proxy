@@ -62,10 +62,11 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
             var ok = false;
 
             var payloadFactory = new MockPayloadFactory();
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator(payloadFactory);
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(payloadFactory, generator);
+            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
+            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
 
             var proxy = constructor.CreateProxy<IClassMock11, ClassMock11>(
+                payloadFactory,
                 typeof(TestWrapWithProxyAttribute),
                 new Action(() =>
                 {
@@ -86,10 +87,11 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
             var ok2 = false;
 
             var payloadFactory = new MockPayloadFactory();
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator(payloadFactory);
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(payloadFactory, generator);
+            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
+            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
 
             var proxy = constructor.CreateProxy<IClassMock11, ClassMock11>(
+                payloadFactory,
                 typeof(TestWrapWithProxyAttribute),
                 new Action(() =>
                 {

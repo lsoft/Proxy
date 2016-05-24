@@ -22,13 +22,11 @@ namespace ProxyNinjectDemostration
                     .InSingletonScope()
                     ;
 
-                // bind proxy generator: 
-
-                kernel
-                    .Bind<IGeneratorProvider>()
-                    .To<GeneratorProvider>()
-                    .InSingletonScope()
-                    ;
+                //bind proxy module
+                var proxyModule = new ProxyModule();
+                kernel.Load(
+                    proxyModule
+                    );
 
                 //bind application proxied things:
 

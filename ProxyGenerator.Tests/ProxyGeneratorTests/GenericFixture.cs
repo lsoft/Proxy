@@ -12,10 +12,11 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
         {
             var payloadFactory = new MockPayloadFactory();
 
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator(payloadFactory);
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(payloadFactory, generator);
+            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
+            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
 
             var proxy = constructor.CreateProxy<IClassMock14<string>, ClassMock14<string>>(
+                payloadFactory,
                 typeof(TestWrapWithProxyAttribute),
                 new Action(() =>
                 {

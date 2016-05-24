@@ -1,5 +1,6 @@
 using System;
 using Ninject;
+using Ninject.Modules;
 using PerformanceTelemetry;
 using PerformanceTelemetry.Container;
 using PerformanceTelemetry.Container.Saver;
@@ -20,91 +21,64 @@ using ProxyNinjectDemostration.ProxyRelated.Saver;
 
 namespace ProxyNinjectDemostration.ProxyRelated
 {
-    public class GeneratorProvider : IGeneratorProvider
+    public class ProxyModule : NinjectModule
     {
-        private readonly IKernel _kernel;
-
-        public GeneratorProvider(
-            IKernel kernel
+        public ProxyModule(
             )
         {
-            if (kernel == null)
-            {
-                throw new ArgumentNullException("kernel");
-            }
-
-            _kernel = kernel;
-
-            Bind();
         }
 
-        private void Bind()
+        public override void Load()
         {
-            _kernel
-                .Bind<ITelemetryLogger>()
+            Bind<ITelemetryLogger>()
                 .To<ConsoleTelemetryLogger>()
                 .InSingletonScope()
                 ;
 
-            _kernel
-                .Bind<IItemSaverFactory>()
+            Bind<IItemSaverFactory>()
                 .To<ConsoleSaverFactory>()
                 .InSingletonScope()
                 ;
 
-            _kernel
-                .Bind<IPerformanceTimerFactory>()
+            Bind<IPerformanceTimerFactory>()
                 .To<PerformanceTimerFactory>()
                 .InSingletonScope()
                 ;
 
-            _kernel
-                .Bind<IPerformanceRecordFactory>()
+            Bind<IPerformanceRecordFactory>()
                 .To<PerformanceRecordFactory>()
                 .InSingletonScope()
                 ;
 
-            _kernel
-                .Bind<IErrorContextFactory>()
+            Bind<IErrorContextFactory>()
                 .To<EmptyContextFactory>()
                 .InSingletonScope()
                 ;
 
-            _kernel
-                .Bind<IThreadIdProvider>()
+            Bind<IThreadIdProvider>()
                 .To<ThreadIdProvider>()
                 .InSingletonScope()
                 ;
 
-            _kernel
-                .Bind<IPerformanceContainer>()
+            Bind<IPerformanceContainer>()
                 .To<PerformanceContainer>()
                 .InSingletonScope()
                 ;
 
-            _kernel
-                .Bind<IProxyPayloadFactory>()
+            Bind<IProxyPayloadFactory>()
                 .To<PerformanceTelemetryPayloadFactory>()
                 .InSingletonScope()
                 ;
 
-            _kernel
-                .Bind<IProxyTypeGenerator>()
+            Bind<IProxyTypeGenerator>()
                 .To<ProxyTypeGenerator>()
                 .InSingletonScope()
                 ;
 
-            _kernel
-                .Bind<IPerformanceSaver>()
+            Bind<IPerformanceSaver>()
                 .To<EventBasedSaver>()
                 .InSingletonScope()
                 ;
-        }
-
-        public IProxyTypeGenerator ProvideGenerator()
-        {
-            return
-                _kernel.Get<IProxyTypeGenerator>();
         }
 
     }

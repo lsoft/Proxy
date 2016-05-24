@@ -61,10 +61,13 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
         public void TestInvalidPair()
         {
             var payloadFactory = new MockPayloadFactory();
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator(payloadFactory);
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(payloadFactory, generator);
+            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
+            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
 
-            constructor.CreateProxy<IClassMock1, ClassMock0>(typeof(TestWrapWithProxyAttribute));
+            constructor.CreateProxy<IClassMock1, ClassMock0>(
+                payloadFactory,
+                typeof(TestWrapWithProxyAttribute)
+                );
         }
 
         [TestMethod]
@@ -72,10 +75,13 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
         public void TestInvalidClass()
         {
             var payloadFactory = new MockPayloadFactory();
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator(payloadFactory);
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(payloadFactory, generator);
+            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
+            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
 
-            constructor.CreateProxy<IClassMock1, IClassMock0>(typeof(TestWrapWithProxyAttribute));
+            constructor.CreateProxy<IClassMock1, IClassMock0>(
+                payloadFactory,
+                typeof(TestWrapWithProxyAttribute)
+                );
         }
 
         [TestMethod]
@@ -83,20 +89,26 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
         public void TestInvalidInterface()
         {
             var payloadFactory = new MockPayloadFactory();
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator(payloadFactory);
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(payloadFactory, generator);
+            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
+            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
 
-            constructor.CreateProxy<ClassMock0, ClassMock0>(typeof(TestWrapWithProxyAttribute));
+            constructor.CreateProxy<ClassMock0, ClassMock0>(
+                payloadFactory,
+                typeof(TestWrapWithProxyAttribute)
+                );
         }
 
         [TestMethod]
         public void TestCorrect()
         {
             var payloadFactory = new MockPayloadFactory();
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator(payloadFactory);
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(payloadFactory, generator);
+            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
+            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
 
-            var proxy = constructor.CreateProxy<IClassMock0, ClassMock0>(typeof(TestWrapWithProxyAttribute));
+            var proxy = constructor.CreateProxy<IClassMock0, ClassMock0>(
+                payloadFactory,
+                typeof(TestWrapWithProxyAttribute)
+                );
 
             Assert.IsNotNull(proxy);
         }

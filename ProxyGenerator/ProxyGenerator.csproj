@@ -108,6 +108,7 @@
     <Compile Include="C\StandaloneProxyConstructor.cs" />
     <Compile Include="G\AssemblyContainer.cs" />
     <Compile Include="G\IProxyTypeGenerator.cs" />
+    <Compile Include="G\Parameters.cs" />
     <Compile Include="G\ProxyTypeGenerator.cs" />
     <Compile Include="G\ProxyKey.cs" />
     <Compile Include="G\ProxySourceGenerator.cs" />

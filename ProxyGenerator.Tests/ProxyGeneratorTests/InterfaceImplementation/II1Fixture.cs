@@ -60,11 +60,14 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests.InterfaceImplementation
         public void TestII0()
         {
             var payloadFactory = new MockPayloadFactory();
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator(payloadFactory);
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(payloadFactory, generator);
+            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
+            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
 
             var original = new ClassMockII1();
-            var proxy = constructor.CreateProxy<IClassMockII1, ClassMockII1>(typeof(TestWrapWithProxyAttribute));
+            var proxy = constructor.CreateProxy<IClassMockII1, ClassMockII1>(
+                payloadFactory,
+                typeof(TestWrapWithProxyAttribute)
+                );
 
             {
                 var originalImplementInterface = original.GetType().GetInterface(typeof (IDisposable).Name) != null;

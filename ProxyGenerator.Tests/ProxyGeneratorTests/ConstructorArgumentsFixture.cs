@@ -73,10 +73,11 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
                     dispose = true;
                 });
 
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator(payloadFactory);
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(payloadFactory, generator);
+            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
+            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
 
             var proxy = constructor.CreateProxy<IClassMock12, ClassMock12>(
+                payloadFactory,
                 typeof(TestWrapWithProxyAttribute),
                 new Action(() =>
                 {
@@ -109,10 +110,11 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
                     dispose = true;
                 });
 
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator(payloadFactory);
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(payloadFactory, generator);
+            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
+            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
 
             var proxy = constructor.CreateProxy<IClassMock12, ClassMock12>(
+                payloadFactory,
                 typeof(TestWrapWithProxyAttribute),
                 new Action(() =>
                 {
@@ -152,10 +154,11 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
                     dispose = true;
                 });
 
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator(payloadFactory);
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(payloadFactory, generator);
+            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
+            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
 
             var proxy = constructor.CreateProxy<IClassMock12, ClassMock12>(
+                payloadFactory,
                 typeof(TestWrapWithProxyAttribute),
                 new Action(() =>
                 {
@@ -192,10 +195,11 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
                     dispose = true;
                 });
 
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator(payloadFactory);
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(payloadFactory, generator);
+            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
+            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
 
             var proxy = constructor.CreateProxy<IClassMock12, ClassMock12>(
+                payloadFactory,
                 typeof(TestWrapWithProxyAttribute),
                 new Action(() =>
                 {

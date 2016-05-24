@@ -7,13 +7,11 @@ namespace ProxyGenerator.G
 {
     internal class ProxySourceGenerator
     {
-        private readonly DateTime _proxyTimeSuffix;
+        private readonly string _suffix = "_" + Guid.NewGuid().ToString().Replace("-", string.Empty);
 
         public ProxySourceGenerator(
-            DateTime proxyTimeSuffix
             )
         {
-            _proxyTimeSuffix = proxyTimeSuffix;
         }
 
 
@@ -45,14 +43,16 @@ namespace ProxyGenerator.G
                 result = string.Format(
                     "{0}{1}Proxy",
                     ppp,
-                    _proxyTimeSuffix.Ticks.ToString(CultureInfo.InvariantCulture));
+                    _suffix
+                    );
             }
             else
             {
                 result = string.Format(
                     "{0}{1}Proxy",
                     classType.Name,
-                    _proxyTimeSuffix.Ticks.ToString(CultureInfo.InvariantCulture));
+                    _suffix
+                    );
             }
 
             return result;
@@ -72,14 +72,16 @@ namespace ProxyGenerator.G
                 result = string.Format(
                     "{0}{1}Proxy",
                     ppp,
-                    _proxyTimeSuffix.Ticks.ToString(CultureInfo.InvariantCulture));
+                    _suffix
+                    );
             }
             else
             {
                 result = string.Format(
                     "{0}{1}Proxy",
                     classType.Name,
-                    _proxyTimeSuffix.Ticks.ToString(CultureInfo.InvariantCulture));
+                    _suffix
+                    );
             }
 
             return result;
@@ -205,7 +207,8 @@ namespace ProxyGenerator.G
             //вложенные классы в рефлексии отображаются через знак плюс
             var fn0 = fullname.Replace(
                 "+",
-                ".");
+                "."
+                );
 
             return fn0;
         }

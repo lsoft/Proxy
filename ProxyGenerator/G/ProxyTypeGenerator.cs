@@ -11,7 +11,6 @@ using System.Threading;
 using Microsoft.CSharp;
 using ProxyGenerator.PL;
 using ProxyGenerator.PropertyLogic;
-using ProxyGenerator.WrapMethodResolver;
 
 namespace ProxyGenerator.G
 {
@@ -21,45 +20,19 @@ namespace ProxyGenerator.G
     /// </summary>
     public class ProxyTypeGenerator : IProxyTypeGenerator
     {
-        private readonly IProxyPayloadFactory _payloadFactory;
-        private readonly ConcurrentDictionary<ProxyKey, Type> _preCompiledCache;
-
+        private readonly ConcurrentDictionary<ProxyKey, Type> _preCompiledCache = new ConcurrentDictionary<ProxyKey, Type>();
 
         /// <summary>
         /// Хранилище сгенерированных сборок, чтобы их не добавлять в референсы новых генерируемых сборок
         /// </summary>
-        private static readonly AssemblyContainer _compiledAssemblyContainer;
-
-        static ProxyTypeGenerator()
-        {
-            _compiledAssemblyContainer = new AssemblyContainer();
-        }
+        private readonly AssemblyContainer _compiledAssemblyContainer = new AssemblyContainer();
 
         /// <summary>
         /// Создание прокси-генератора
         /// </summary>
-        /// <param name="payloadFactory">Фабрика полезной нагрузки прокси-объекта</param>
-        public ProxyTypeGenerator(IProxyPayloadFactory payloadFactory)
+        public ProxyTypeGenerator(
+            )
         {
-            if (payloadFactory == null)
-            {
-                throw new ArgumentNullException("payloadFactory");
-            }
-
-            _payloadFactory = payloadFactory;
-            _preCompiledCache = new ConcurrentDictionary<ProxyKey, Type>();
-        }
-
-        /// <summary>
-        /// Фабрика полезной нагрузки, которая зарегистрирована в этом генераторе
-        /// </summary>
-        public IProxyPayloadFactory PayloadFactory
-        {
-            get
-            {
-                return
-                    _payloadFactory;
-            }
         }
 
         /// <summary>
@@ -67,21 +40,17 @@ namespace ProxyGenerator.G
         /// </summary>
         /// <typeparam name="TInterface">Интерфейс, выдаваемый наружу</typeparam>
         /// <typeparam name="TClass">Тип оборачиваемого объекта</typeparam>
-        /// <param name="wrapResolver">Делегат-определитель, надо ли проксить метод</param>
-        /// <param name="generatedAssemblyName">Необязательный параметр имени генерируемой сборки</param>
-        /// <param name="additionalReferencedAssembliesLocation">Сборки, на которые надо дополнительно сделать референсы при компиляции прокси</param>
+        /// <param name="p">Настройки генерации</param>
         /// <returns>Сформированный ТИП прокси, который после создания ЭКЗЕМПЛЯРА с помощью интерфейса прикидывается оборачиваемым объектом</returns>
         public Type CreateProxyType<TInterface, TClass>(
-            WrapResolverDelegate wrapResolver,
-            string generatedAssemblyName = null,
-            string[] additionalReferencedAssembliesLocation = null
+            Parameters p
             )
                 where TInterface : class
                 where TClass : class
         {
-            if (wrapResolver == null)
+            if (p == null)
             {
-                throw new ArgumentNullException("wrapResolver");
+                throw new ArgumentNullException("p");
             }
 
             var tc = typeof(TClass);
@@ -124,16 +93,14 @@ namespace ProxyGenerator.G
             {
                 //в кеше не найдено, необходимо компилировать
 
-                //компилируем, это долгий процесс (поэтому не должен быть под блокировкой)
+                //компилируем, это долгий процесс
                 var type = CompileProxyType<TInterface, TClass>(
-                    wrapResolver,
-                    _payloadFactory,
-                    generatedAssemblyName,
-                    additionalReferencedAssembliesLocation
+                    p
                     );
 
                 //пытаемся сохранить в кеш
                 //если в кеше уже есть версия этого прокси-типа, то метод вернет ее, так как в кеше более ранняя версия
+                //получится, что мы зря компилили, но это не страшно дял логики работы
                 proxyType = TryToSaveProxyTypeToCache(key, type);
             }
 
@@ -163,43 +130,19 @@ namespace ProxyGenerator.G
             return result;
         }
 
-        /// <summary>
-        /// Попробовать достать прокси из кеша
-        /// </summary>
-        private Type GetProxyTypeFromCache(ProxyKey key)
+        private Type CompileProxyType<TInterface, TClass>(
+            Parameters p
+            )
         {
-            Type result = null;
-
-            _preCompiledCache.TryGetValue(key, out result);
-
-            return result;
-        }
-
-        #endregion
-
-        #region private static
-
-        private static Type CompileProxyType<TInterface, TClass>(
-            WrapResolverDelegate wrapResolver,
-            IProxyPayloadFactory factory,
-            string generatedAssemblyName,
-            string[] additionalReferencedAssembliesLocation)
-        {
-            if (wrapResolver == null)
+            if (p == null)
             {
-                throw new ArgumentNullException("wrapResolver");
+                throw new ArgumentNullException("p");
             }
-            if (factory == null)
-            {
-                throw new ArgumentNullException("factory");
-            }
-            //generatedAssemblyName allowed to be null
-            //additionalReferencedAssembliesLocation allowed to be null
 
             var tc = typeof(TClass);
             var ti = typeof(TInterface);
 
-            var sg = new ProxySourceGenerator(DateTime.Now);
+            var sg = new ProxySourceGenerator();
 
             #region constructor
 
@@ -312,7 +255,7 @@ namespace ProxyGenerator.G
 
                     string preMethod;
 
-                    if (wrapResolver(tim))
+                    if (p.WrapResolver(tim))
                     {
                         //метод надо оборачивать во враппер
                         preMethod = ProxyMethod;
@@ -393,7 +336,7 @@ namespace ProxyGenerator.G
                 "{_PropertiesList_}",
                 propertiesList);
 
-            var factoryAssembly = factory.GetType().Assembly;
+            var factoryAssembly = p.ProxyPayloadFactory.GetType().Assembly;
             var factoryAssemblyUsing = factoryAssembly.FullName.Split(',')[0];
 
             var class6 = class5.Replace(
@@ -413,7 +356,7 @@ namespace ProxyGenerator.G
 
             Assembly compiledAssembly;
 
-            #region compile with .NET 4.0
+            #region compile with .NET 4.0 into compiledAssembly
 
             using (var compiler = new CSharpCodeProvider(new Dictionary<String, String> { { "CompilerVersion", "v4.0" } }))
             {
@@ -443,7 +386,7 @@ namespace ProxyGenerator.G
                 }
 
                 //добавляем сборку фактори
-                compilerParameters.ReferencedAssemblies.Add(factory.GetType().Assembly.Location);
+                compilerParameters.ReferencedAssemblies.Add(p.ProxyPayloadFactory.GetType().Assembly.Location);
 
                 //добавляем сборку интерфейса
                 compilerParameters.ReferencedAssemblies.Add(ti.Assembly.Location);
@@ -452,9 +395,9 @@ namespace ProxyGenerator.G
                 compilerParameters.ReferencedAssemblies.Add(tc.Assembly.Location);
 
                 //добавляем добавочные сборки
-                if (additionalReferencedAssembliesLocation != null)
+                if (p.AdditionalReferencedAssembliesLocation != null)
                 {
-                    foreach (var aral in additionalReferencedAssembliesLocation)
+                    foreach (var aral in p.AdditionalReferencedAssembliesLocation)
                     {
                         compilerParameters.ReferencedAssemblies.Add(aral);
                     }
@@ -462,9 +405,9 @@ namespace ProxyGenerator.G
 
                 compilerParameters.GenerateInMemory = true;
 
-                if (!string.IsNullOrEmpty(generatedAssemblyName))
+                if (!string.IsNullOrEmpty(p.GeneratedAssemblyName))
                 {
-                    compilerParameters.OutputAssembly = generatedAssemblyName;
+                    compilerParameters.OutputAssembly = p.GeneratedAssemblyName;
                 }
 
                 var compilerResults = compiler.CompileAssemblyFromSource(compilerParameters, sources);
