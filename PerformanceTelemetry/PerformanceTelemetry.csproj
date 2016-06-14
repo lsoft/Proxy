@@ -109,6 +109,7 @@
     <Compile Include="Container\PerformanceContainer.cs" />
     <Compile Include="Container\Saver\BatchBasedSaver.cs" />
     <Compile Include="Container\Saver\EventBasedSaver.cs" />
+    <Compile Include="Container\Saver\Item\FakeItemSaver.cs" />
     <Compile Include="Container\Saver\Item\Sql\SqlCommand\SqlCommandItemSaver.cs">
       <SubType>Code</SubType>
     </Compile>

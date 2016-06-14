@@ -20,6 +20,7 @@ namespace PerformanceTelemetry.Container.Saver.Item.Sql.SqlBatch
         private readonly string _tableName;
         private readonly long _aliveRowsCount;
 
+        private volatile bool _safeMode = false;
 
         public SqlBatchItemSaverFactory(
             ITelemetryLogger logger,
@@ -54,43 +55,67 @@ namespace PerformanceTelemetry.Container.Saver.Item.Sql.SqlBatch
             _tableName = tableName;
             _aliveRowsCount = aliveRowsCount;
 
-            using (var connection = new SqlConnection(_connectionString))
+            try
             {
-                connection.Open();
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
 
-                long lastRowId;
-                SqlHelper.DoPreparation(
-                    connection,
-                    null,
-                    _databaseName,
-                    _tableName,
-                    _logger,
-                    out lastRowId
+                    long lastRowId;
+                    SqlHelper.DoPreparation(
+                        connection,
+                        null,
+                        _databaseName,
+                        _tableName,
+                        _logger,
+                        out lastRowId
+                        );
+
+                    _stackIdContainer = SqlHelper.ReadStackTable(
+                        connection,
+                        null,
+                        _databaseName,
+                        _tableName,
+                        _logger
+                        );
+
+                    _lastRowIdContainer = new LastRowIdContainer(lastRowId);
+                }
+            }
+            catch(Exception excp)
+            {
+                _safeMode = true;
+
+                logger.LogHandledException(
+                    this.GetType(),
+                    "Error database patching. Telemetry is going offline.",
+                    excp
                     );
-
-                _stackIdContainer = SqlHelper.ReadStackTable(
-                    connection,
-                    null,
-                    _databaseName,
-                    _tableName,
-                    _logger
-                    );
-
-                _lastRowIdContainer = new LastRowIdContainer(lastRowId);
             }
         }
 
         public IItemSaver CreateItemSaver()
         {
-            var r = new SqlBatchItemSaver(
-                _logger,
-                _stackIdContainer,
-                _connectionString,
-                _databaseName,
-                _tableName,
-                _aliveRowsCount,
-                _lastRowIdContainer
-                );
+            IItemSaver r = null;
+
+            if (_safeMode)
+            {
+                //при ошибке патчинга, логгинг отключается
+
+                r = FakeItemSaver.Instance;
+            }
+            else
+            {
+                r = new SqlBatchItemSaver(
+                    _logger,
+                    _stackIdContainer,
+                    _connectionString,
+                    _databaseName,
+                    _tableName,
+                    _aliveRowsCount,
+                    _lastRowIdContainer
+                    );
+            }
 
             return
                 r;
@@ -100,7 +125,10 @@ namespace PerformanceTelemetry.Container.Saver.Item.Sql.SqlBatch
         {
             try
             {
-                _stackIdContainer.Dispose();
+                if (_stackIdContainer != null)
+                {
+                    _stackIdContainer.Dispose();
+                }
             }
             catch (Exception excp)
             {
