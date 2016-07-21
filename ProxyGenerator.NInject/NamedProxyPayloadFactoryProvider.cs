@@ -1,6 +1,6 @@
 using System;
 using Ninject;
-using ProxyGenerator.PL;
+using ProxyGenerator.Payload;
 
 namespace ProxyGenerator.NInject
 {

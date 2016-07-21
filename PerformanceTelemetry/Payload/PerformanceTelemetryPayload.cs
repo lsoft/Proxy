@@ -4,7 +4,7 @@ using PerformanceTelemetry.ErrorContext;
 using PerformanceTelemetry.Record;
 using PerformanceTelemetry.ThreadIdProvider;
 using ProxyGenerator;
-using ProxyGenerator.PL;
+using ProxyGenerator.Payload;
 
 namespace PerformanceTelemetry.Payload
 {

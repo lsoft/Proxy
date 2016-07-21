@@ -7,9 +7,7 @@ using Ninject;
 using Ninject.Activation;
 using Ninject.Extensions.Factory;
 using Ninject.Syntax;
-using ProxyGenerator;
-using ProxyGenerator.C;
-using ProxyGenerator.G;
+using ProxyGenerator.Generator;
 using ProxyGenerator.WrapMethodResolver;
 
 namespace ProxyGenerator.NInject

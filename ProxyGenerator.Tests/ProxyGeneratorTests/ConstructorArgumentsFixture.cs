@@ -1,5 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using ProxyGenerator.Constructor;
+using ProxyGenerator.Generator;
 
 namespace ProxyGenerator.Tests.ProxyGeneratorTests
 {
@@ -73,8 +75,8 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
                     dispose = true;
                 });
 
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
+            var generator = new ProxyTypeGenerator();
+            var constructor = new StandaloneProxyConstructor(generator);
 
             var proxy = constructor.CreateProxy<IClassMock12, ClassMock12>(
                 payloadFactory,
@@ -110,8 +112,8 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
                     dispose = true;
                 });
 
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
+            var generator = new ProxyTypeGenerator();
+            var constructor = new StandaloneProxyConstructor(generator);
 
             var proxy = constructor.CreateProxy<IClassMock12, ClassMock12>(
                 payloadFactory,
@@ -154,8 +156,8 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
                     dispose = true;
                 });
 
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
+            var generator = new ProxyTypeGenerator();
+            var constructor = new StandaloneProxyConstructor(generator);
 
             var proxy = constructor.CreateProxy<IClassMock12, ClassMock12>(
                 payloadFactory,
@@ -195,8 +197,8 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
                     dispose = true;
                 });
 
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
+            var generator = new ProxyTypeGenerator();
+            var constructor = new StandaloneProxyConstructor(generator);
 
             var proxy = constructor.CreateProxy<IClassMock12, ClassMock12>(
                 payloadFactory,

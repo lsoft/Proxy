@@ -104,19 +104,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="C\IProxyConstructor.cs" />
-    <Compile Include="C\StandaloneProxyConstructor.cs" />
-    <Compile Include="G\AssemblyContainer.cs" />
-    <Compile Include="G\IProxyTypeGenerator.cs" />
-    <Compile Include="G\Parameters.cs" />
-    <Compile Include="G\ProxyTypeGenerator.cs" />
-    <Compile Include="G\ProxyKey.cs" />
-    <Compile Include="G\ProxySourceGenerator.cs" />
-    <Compile Include="PropertyLogic\PairProperty.cs" />
-    <Compile Include="PL\IProxyPayload.cs" />
-    <Compile Include="PL\IProxyPayloadFactory.cs" />
+    <Compile Include="Constructor\IProxyConstructor.cs" />
+    <Compile Include="Constructor\StandaloneProxyConstructor.cs" />
+    <Compile Include="Generator\AssemblyContainer.cs" />
+    <Compile Include="Generator\IProxyTypeGenerator.cs" />
+    <Compile Include="Generator\Parameters.cs" />
+    <Compile Include="Generator\ProxyTypeGenerator.cs" />
+    <Compile Include="Generator\ProxyKey.cs" />
+    <Compile Include="Generator\SourceHelper.cs" />
+    <Compile Include="ReflectionHelper.cs" />
+    <Compile Include="Wrapper\Constructor\ConstructorWrapper.cs" />
+    <Compile Include="Wrapper\Event\EventWrapper.cs" />
+    <Compile Include="Wrapper\IWrapper.cs" />
+    <Compile Include="Wrapper\Method\MethodWrapper.cs" />
+    <Compile Include="Wrapper\Property\PropertyWrapper.cs" />
+    <Compile Include="Payload\IProxyPayload.cs" />
+    <Compile Include="Payload\IProxyPayloadFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="PropertyLogic\PropertyDefinition.cs" />
+    <Compile Include="Wrapper\Property\PropertyElement.cs" />
     <Compile Include="WrapMethodResolver\AttributeWrapMethodResolver.cs" />
     <Compile Include="WrapMethodResolver\WrapResolverDelegate.cs" />
   </ItemGroup>
@@ -131,9 +136,6 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>true</Install>
     </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="_readme.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

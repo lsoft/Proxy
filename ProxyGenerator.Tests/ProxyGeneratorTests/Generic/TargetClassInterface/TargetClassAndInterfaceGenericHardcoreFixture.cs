@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using ProxyGenerator.Constructor;
+using ProxyGenerator.Generator;
 
 namespace ProxyGenerator.Tests.ProxyGeneratorTests.Generic.TargetClassInterface
 {
@@ -94,8 +96,8 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests.Generic.TargetClassInterface
                     dispose = true;
                 });
 
-            var generator = new ProxyGenerator.G.ProxyTypeGenerator();
-            var constructor = new ProxyGenerator.C.StandaloneProxyConstructor(generator);
+            var generator = new ProxyTypeGenerator();
+            var constructor = new StandaloneProxyConstructor(generator);
 
             var proxy = constructor.CreateProxy<IClassMock19<T, U>, ClassMock19<T, U>>(
                 payloadFactory,

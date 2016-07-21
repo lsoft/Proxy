@@ -1,5 +1,5 @@
 ﻿using System;
-using ProxyGenerator.PL;
+using ProxyGenerator.Payload;
 
 namespace ProxyGenerator.Tests.ProxyGeneratorTests
 {

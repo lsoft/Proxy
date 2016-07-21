@@ -3,7 +3,7 @@ using PerformanceTelemetry.Container;
 using PerformanceTelemetry.ErrorContext;
 using PerformanceTelemetry.ThreadIdProvider;
 using ProxyGenerator;
-using ProxyGenerator.PL;
+using ProxyGenerator.Payload;
 
 namespace PerformanceTelemetry.Payload
 {
