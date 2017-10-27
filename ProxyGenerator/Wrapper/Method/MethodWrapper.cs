@@ -70,45 +70,65 @@ namespace ProxyGenerator.Wrapper.Method
                 _method.Name
                 );
 
+            var mgalist = new List<string>();
+            foreach (var mga in _method.GetGenericArguments())
+            {
+                mgalist.Add(mga.Name);
+            }
+
+            var mgasum = string.Empty;
+            if (mgalist.Count > 0)
+            {
+                mgasum = string.Format(
+                    "<{0}>", 
+                    string.Join(",", mgalist)
+                    );
+            }
+
             var proxyMethod1 = proxyMethod0.Replace(
+                "{_MethodGenericArgs_}",
+                mgasum
+                );
+
+            var proxyMethod2 = proxyMethod1.Replace(
                 "{_ClassName_}",
                 SourceHelper.GetClassName(_targetClassType)
                 );
 
-            var proxyMethod2 = proxyMethod1.Replace(
+            var proxyMethod3 = proxyMethod2.Replace(
                 "{_ArgTypeAndNameList_}",
                 argTypeAndNameString
                 );
 
-            var proxyMethod3 = proxyMethod2.Replace(
+            var proxyMethod4 = proxyMethod3.Replace(
                 "{_ArgNameList_}",
                 argNameString
                 );
 
-            var proxyMethod4 = proxyMethod3.Replace(
+            var proxyMethod5 = proxyMethod4.Replace(
                 "{_ReturnType_}",
                 SourceHelper.FullNameConverter(retTypeName)
                 );
 
-            var proxyMethod5 = proxyMethod4.Replace(
+            var proxyMethod6 = proxyMethod5.Replace(
                 "{_ReturnClause_}",
                 notVoid ? "return" : string.Empty
                 );
 
             return
-                proxyMethod5;
+                proxyMethod6;
         }
 
         private const string NonProxyMethod = @"
-        public {_ReturnType_} {_MethodName_}({_ArgTypeAndNameList_})
+        public {_ReturnType_} {_MethodName_}{_MethodGenericArgs_}({_ArgTypeAndNameList_})
         {
             //не надо телеметрии из этого метода
-            {_ReturnClause_} _wrappedObject.{_MethodName_}({_ArgNameList_});
+            {_ReturnClause_} _wrappedObject.{_MethodName_}{_MethodGenericArgs_}({_ArgNameList_});
         }
 ";
 
         private const string ProxyMethod = @"
-        public {_ReturnType_} {_MethodName_}({_ArgTypeAndNameList_})
+        public {_ReturnType_} {_MethodName_}{_MethodGenericArgs_}({_ArgTypeAndNameList_})
         {
             //метод с телеметрией
 
@@ -116,7 +136,7 @@ namespace ProxyGenerator.Wrapper.Method
 
             try
             {
-                {_ReturnClause_} _wrappedObject.{_MethodName_}({_ArgNameList_});
+                {_ReturnClause_} _wrappedObject.{_MethodName_}{_MethodGenericArgs_}({_ArgNameList_});
             }
             catch (Exception excp)
             {
