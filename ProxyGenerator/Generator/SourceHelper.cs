@@ -171,7 +171,7 @@ namespace ProxyGenerator.Generator
                         .ConvertAll(j => ParameterTypeConverter(j))
                         .ToArray());
 
-                var ppp = parameterType.ToString();
+                var ppp = ParameterTypeStringConverter(parameterType.ToString());
                 ppp = ppp.Substring(0, ppp.IndexOf('`'));
 
                 result = string.Format("{0}<{1}>", ppp, p);

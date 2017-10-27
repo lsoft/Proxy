@@ -57,6 +57,7 @@
     <Compile Include="ProxyGeneratorTests\Events\EventsFixture.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="ProxyGeneratorTests\Generic\Parameters\GenericParameter2Fixture.cs" />
     <Compile Include="ProxyGeneratorTests\Hierarchy\HierarchyInterface1Fixture.cs" />
     <Compile Include="ProxyGeneratorTests\GenericFixture.cs" />
     <Compile Include="ProxyGeneratorTests\Generic\Parameters\GenericParameter0Fixture.cs" />
