@@ -3,6 +3,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using Castle.DynamicProxy.Generators;
 using Ninject;
 using Ninject.Activation;
 using Ninject.Extensions.Factory;
@@ -17,6 +18,60 @@ namespace ProxyGenerator.NInject
     /// </summary>
     public static class BindToExtensions
     {
+        /// <summary>
+        /// Defines that the interface shall be bound to an automatically created factory proxy.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first interface.</typeparam>
+        /// <typeparam name="T2">The type of the second interface.</typeparam>
+        /// <typeparam name="TClass">The type of the target class</typeparam>
+        /// <param name="syntax">The syntax.</param>
+        /// <param name="wrapResolver">Делегат-определитель, надо ли проксить метод</param>
+        /// <param name="proxyPayloadFactoryProvider">Поставщик фабрики объектов полезной нагрузки</param>
+        /// <param name="generatedAssemblyName">Необязательный параметр имени генерируемой сборки</param>
+        /// <param name="additionalReferencedAssembliesLocation">Сборки, на которые надо дополнительно сделать референсы при компиляции прокси</param>
+        /// <returns>The <see cref="IBindingWhenInNamedWithOrOnSyntax{TInterface}"/> to configure more things for the binding.</returns>
+        public static IBindingWhenInNamedWithOrOnSyntax<object> ToProxy<T1, T2, TClass>(
+            this IBindingToSyntax<T1, T2> syntax,
+            WrapResolverDelegate wrapResolver,
+            IProxyPayloadFactoryProvider proxyPayloadFactoryProvider = null,
+            string generatedAssemblyName = null,
+            string[] additionalReferencedAssembliesLocation = null
+            )
+            where T1 : class
+            where T2 : class
+            where TClass : class
+        {
+            if (syntax == null)
+            {
+                throw new ArgumentNullException("syntax");
+            }
+            if (wrapResolver == null)
+            {
+                throw new ArgumentNullException("wrapResolver");
+            }
+
+            if (proxyPayloadFactoryProvider == null)
+            {
+                proxyPayloadFactoryProvider = new NamedProxyPayloadFactoryProvider();
+            }
+
+            var proxyPayloadFactory = proxyPayloadFactoryProvider.GetProxyPayloadFactory(syntax.Kernel);
+
+            var p = new Parameters(
+                proxyPayloadFactory,
+                wrapResolver,
+                generatedAssemblyName,
+                additionalReferencedAssembliesLocation
+                );
+
+            var result = Do<T1, T2, TClass>(
+                syntax,
+                p
+                );
+
+            return
+                result;
+        }
 
         /// <summary>
         /// Defines that the interface shall be bound to an automatically created factory proxy.
@@ -111,6 +166,51 @@ namespace ProxyGenerator.NInject
                 syntax,
                 p
                 );
+
+            return
+                result;
+        }
+
+        private static IBindingWhenInNamedWithOrOnSyntax<object> Do<T1, T2, TClass>(
+            IBindingToSyntax<T1, T2> syntax,
+            Parameters p
+            )
+            where T1 : class
+            where T2 : class
+            where TClass : class
+        {
+            if (p == null)
+            {
+                throw new ArgumentNullException("p");
+            }
+
+            var generator = syntax.Kernel.Get<IProxyTypeGenerator>();
+
+
+             var proxy = generator.CreateProxyType<T1, TClass>(
+                p
+                );
+
+            var result = syntax.To(proxy);
+
+            result
+                .WithConstructorArgument(
+                    "factory",
+                    p.ProxyPayloadFactory
+                    );
+
+            var instanceProviderFunc = new Func<IContext, IInstanceProvider>((c) => c.Kernel.Get<IInstanceProvider>());
+
+            var bindingConfiguration = syntax.BindingConfiguration; // Do not pass syntax to the lambda!!! We do not want the lambda referencing the syntax!!!
+
+            syntax.Kernel
+                .Bind<IInstanceProvider>()
+                .ToMethod(instanceProviderFunc)
+                .When(
+                    r => r.ParentRequest != null
+                         && r.ParentRequest.ParentContext.Binding.BindingConfiguration == bindingConfiguration
+                )
+                .InScope(ctx => bindingConfiguration);
 
             return
                 result;
