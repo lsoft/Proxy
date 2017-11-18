@@ -1,27 +1,17 @@
-using System;
-using Ninject;
 using Ninject.Modules;
-using PerformanceTelemetry;
 using PerformanceTelemetry.Container;
 using PerformanceTelemetry.Container.Saver;
-using PerformanceTelemetry.Container.Saver.Item;
-using PerformanceTelemetry.ErrorContext;
 using PerformanceTelemetry.Payload;
 using PerformanceTelemetry.Record;
 using PerformanceTelemetry.ThreadIdProvider;
 using PerformanceTelemetry.Timer;
 using ProxyGenerator.Generator;
-using ProxyGenerator.NInject;
 using ProxyGenerator.Payload;
-using ProxyNinjectDemostration.ApplicationThings;
-using ProxyNinjectDemostration.ApplicationThings.Logger;
-using ProxyNinjectDemostration.ProxyRelated.ErrorContext;
-using ProxyNinjectDemostration.ProxyRelated.ErrorLogger;
-using ProxyNinjectDemostration.ProxyRelated.Saver;
 
-namespace ProxyNinjectDemostration.ProxyRelated
+namespace ProxyGenerator.NInject
 {
-    public class ProxyModule : NinjectModule
+    public class ProxyModule<TPerformanceSaver> : NinjectModule
+        where TPerformanceSaver : IPerformanceSaver
     {
         public ProxyModule(
             )
@@ -30,16 +20,11 @@ namespace ProxyNinjectDemostration.ProxyRelated
 
         public override void Load()
         {
-            Bind<ITelemetryLogger>()
-                .To<ConsoleTelemetryLogger>()
-                .InSingletonScope()
-                ;
+            PerformBinding();
+        }
 
-            Bind<IItemSaverFactory>()
-                .To<ConsoleSaverFactory>()
-                .InSingletonScope()
-                ;
-
+        protected virtual void PerformBinding()
+        {
             Bind<IPerformanceTimerFactory>()
                 .To<PerformanceTimerFactory>()
                 .InSingletonScope()
@@ -47,11 +32,6 @@ namespace ProxyNinjectDemostration.ProxyRelated
 
             Bind<IPerformanceRecordFactory>()
                 .To<PerformanceRecordFactory>()
-                .InSingletonScope()
-                ;
-
-            Bind<IErrorContextFactory>()
-                .To<EmptyContextFactory>()
                 .InSingletonScope()
                 ;
 
@@ -76,10 +56,9 @@ namespace ProxyNinjectDemostration.ProxyRelated
                 ;
 
             Bind<IPerformanceSaver>()
-                .To<EventBasedSaver>()
+                .To<TPerformanceSaver>()
                 .InSingletonScope()
                 ;
         }
-
     }
 }

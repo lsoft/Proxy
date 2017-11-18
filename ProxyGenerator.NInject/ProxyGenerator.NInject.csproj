@@ -61,12 +61,17 @@
     <Compile Include="IProxyPayloadFactoryProvider.cs" />
     <Compile Include="NamedProxyPayloadFactoryProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ProxyModule.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\PerformanceTelemetry\PerformanceTelemetry.csproj">
+      <Project>{9a1644e3-7128-4f38-98e5-a540ecb62067}</Project>
+      <Name>PerformanceTelemetry</Name>
+    </ProjectReference>
     <ProjectReference Include="..\ProxyGenerator\ProxyGenerator.csproj">
       <Project>{3397236c-17e3-44c9-9587-be809ebbb153}</Project>
       <Name>ProxyGenerator</Name>

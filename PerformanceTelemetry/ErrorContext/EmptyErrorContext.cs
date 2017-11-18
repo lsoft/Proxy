@@ -1,6 +1,4 @@
-using PerformanceTelemetry.ErrorContext;
-
-namespace ProxyNinjectDemostration.ProxyRelated.ErrorContext
+namespace PerformanceTelemetry.ErrorContext
 {
     internal class EmptyErrorContext : IErrorContext
     {

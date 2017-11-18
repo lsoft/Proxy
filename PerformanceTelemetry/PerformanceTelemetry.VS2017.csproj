@@ -133,6 +133,8 @@
     <Compile Include="Container\Saver\Item\MultipleXml\XmlSaver\DeflateDiskSaver.cs" />
     <Compile Include="Container\Saver\Item\MultipleXml\XmlSaver\XmlPreparator.cs" />
     <Compile Include="Container\Saver\IPerformanceSaver.cs" />
+    <Compile Include="ErrorContext\EmptyErrorContext.cs" />
+    <Compile Include="ErrorContext\EmptyErrorContextFactory.cs" />
     <Compile Include="ErrorContext\IErrorContext.cs" />
     <Compile Include="ErrorContext\IErrorContextFactory.cs" />
     <Compile Include="Exception2StringHelper.cs" />

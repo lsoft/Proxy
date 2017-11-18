@@ -23,7 +23,7 @@ namespace ProxyNinjectDemostration
                     ;
 
                 //bind proxy module
-                var proxyModule = new ProxyModule();
+                var proxyModule = new DemoProxyModule();
                 kernel.Load(
                     proxyModule
                     );

@@ -60,12 +60,10 @@
   <ItemGroup>
     <Compile Include="ApplicationThings\Class1\Class1ThatNeedToBeProxied.cs" />
     <Compile Include="ApplicationThings\Logger\ConsoleLogger.cs" />
+    <Compile Include="ProxyRelated\DemoProxyModule.cs" />
     <Compile Include="ProxyRelated\Saver\ConsoleSaver.cs" />
     <Compile Include="ProxyRelated\Saver\ConsoleSaverFactory.cs" />
     <Compile Include="ProxyRelated\ErrorLogger\ConsoleTelemetryLogger.cs" />
-    <Compile Include="ProxyRelated\ErrorContext\EmptyContextFactory.cs" />
-    <Compile Include="ProxyRelated\ErrorContext\EmptyErrorContext.cs" />
-    <Compile Include="ProxyRelated\ProxyModule.cs" />
     <Compile Include="ApplicationThings\Logger\IConsoleLogger.cs" />
     <Compile Include="ApplicationThings\Class1\IInterface1ThatNeedToBeProxied.cs" />
     <Compile Include="Program.cs" />
@@ -77,7 +75,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ProxyRelated\ErrorContext\_readme.txt" />
     <Content Include="ProxyRelated\Saver\_readme.txt" />
   </ItemGroup>
   <ItemGroup>
