@@ -1,4 +1,7 @@
 # Proxy
+
+[![Build status](https://ci.appveyor.com/api/projects/status/kjo2pj1k59fsxs8l?svg=true)](https://ci.appveyor.com/project/lsoft/proxy)
+
 Runtime code generation proxy. Useful telemetry for your C# application.
 It easily binds with [Ninject](https://github.com/ninject), but not require it, and is able to store telemetry to SQL Server, binary files or others containers.
 
