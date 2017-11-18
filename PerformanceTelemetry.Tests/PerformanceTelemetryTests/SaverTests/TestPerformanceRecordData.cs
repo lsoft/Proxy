@@ -6,6 +6,7 @@ using PerformanceTelemetry.Record;
 
 namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
 {
+#if SQL_SERVER_EXISTS
     internal class TestPerformanceRecordData : IPerformanceRecordData
     {
         private readonly List<IPerformanceRecordData> _children;
@@ -133,4 +134,5 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
                 result;
         }
     }
+#endif
 }

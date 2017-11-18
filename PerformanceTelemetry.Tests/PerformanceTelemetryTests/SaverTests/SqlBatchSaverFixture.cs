@@ -18,6 +18,7 @@ using PerformanceTelemetry.Tests.DB.Servicing;
 
 namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
 {
+#if SQL_SERVER_EXISTS
     [TestClass]
     public class SqlBatchSaverFixture : DatabaseFixture
     {
@@ -441,4 +442,5 @@ order by
             Assert.IsTrue(dataExists2);
         }
     }
+#endif
 }
