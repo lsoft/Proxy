@@ -5,6 +5,7 @@ using ProxyGenerator.Generator;
 
 namespace ProxyGenerator.Tests.ProxyGeneratorTests
 {
+#if NET47
     [TestClass]
     public class ValueTupleFixture
     {
@@ -143,4 +144,5 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
         }
 
     }
+#endif
 }
