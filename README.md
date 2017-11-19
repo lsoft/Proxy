@@ -1,6 +1,14 @@
-# Proxy
+# Proxy, also known as YetAnotherProxy :) 
 
 [![Build status](https://ci.appveyor.com/api/projects/status/kjo2pj1k59fsxs8l?svg=true)](https://ci.appveyor.com/project/lsoft/proxy)
+
+Without Ninject
+[![NuGet Version](https://img.shields.io/nuget/v/YetAnotherProxy.svg)](https://www.nuget.org/packages/YetAnotherProxy/)
+[![NuGet Version](https://img.shields.io/nuget/dt/YetAnotherProxy.svg)](https://www.nuget.org/packages/YetAnotherProxy/)
+
+As Ninject extension
+[![NuGet Version](https://img.shields.io/nuget/v/Ninject.Extensions.YetAnotherProxy.svg)](https://www.nuget.org/packages/Ninject.Extensions.YetAnotherProxy/)
+[![NuGet Version](https://img.shields.io/nuget/dt/Ninject.Extensions.YetAnotherProxy.svg)](https://www.nuget.org/packages/Ninject.Extensions.YetAnotherProxy/)
 
 Runtime code generation proxy. Useful telemetry for your C# application.
 It easily binds with [Ninject](https://github.com/ninject), but not require it, and is able to store telemetry to SQL Server, binary files or others containers.
