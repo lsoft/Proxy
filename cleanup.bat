@@ -15,3 +15,6 @@ rem rd ProxyGenerator.Tests\obj /S /Q
 
 rd ProxyDemonstration\bin /S /Q
 rem rd ProxyDemonstration\obj /S /Q
+
+rd ProxyNinjectDemostration\bin /S /Q
+rem rd ProxyNinjectDemostration\obj /S /Q
