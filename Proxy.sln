@@ -15,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProxyGenerator.NInject", "P
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProxyDemonstration", "ProxyDemonstration\ProxyDemonstration.csproj", "{17B4BC49-DC39-42F5-BF2B-8B7F31FD0566}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProxyNinjectDemostration", "ProxyNinjectDemostration\ProxyNinjectDemostration.csproj", "{03542CEC-C63D-46B2-9EE1-3E40976828A0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProxyNinjectDemonstration", "ProxyNinjectDemonstration\ProxyNinjectDemonstration.csproj", "{03542CEC-C63D-46B2-9EE1-3E40976828A0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
