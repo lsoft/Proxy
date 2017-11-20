@@ -3,7 +3,7 @@
   <metadata>
     <id>Ninject.Extensions.YetAnotherProxy</id>
     <title>Ninject.Extensions.YetAnotherProxy</title>
-    <version>1.0.1</version>
+    <version>1.0.0</version>
     <authors>ls</authors>
     <owners>ls</owners>
     <projectUrl>https://github.com/lsoft/Proxy</projectUrl>
@@ -13,7 +13,7 @@
     <!--  <releaseNotes>Added support .Net 4.7.</releaseNotes> -->
     <tags>runtime proxy</tags>
     <dependencies>
-      <dependency id="Ninject" version="3.3.0" />
+      <dependency id="Ninject" version="3.3.3" />
       <dependency id="Ninject.Extensions.Factory" version="3.3.2" />
     </dependencies>
   </metadata>

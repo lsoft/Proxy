@@ -54,3 +54,4 @@ and use it instead of Class1ThatNeedToBeProxied. For example usage (in Ninject s
 ## Payload
 
 Default payload stores a class name, method name, start time, execution time span, and execution exception if raised. Also default payload combines profiling events in stack order for each execution thread.
+Default payload can be replaced by the user's one.

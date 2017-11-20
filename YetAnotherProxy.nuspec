@@ -3,14 +3,14 @@
   <metadata>
     <id>YetAnotherProxy</id>
     <title>YetAnotherProxy</title>
-    <version>1.0.1</version>
+    <version>1.0.0</version>
     <authors>ls</authors>
     <owners>ls</owners>
     <projectUrl>https://github.com/lsoft/Proxy</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Runtime code generation proxy. Useful telemetry for your C# application. It is able to store telemetry to SQL Server, binary files or others containers.</description>
     <copyright>Copyright (c) ls 2017</copyright>
-    <releaseNotes>Added support .Net 4.7.</releaseNotes>
+    <!-- <releaseNotes>Added support .Net 4.7.</releaseNotes> -->
     <tags>runtime proxy</tags>
     <!-- <dependencies>
       <dependency id="SampleDependency" version="1.0" />
