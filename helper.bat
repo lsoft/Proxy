@@ -5,3 +5,12 @@
 .nuget/nuget pack Ninject.Extensions.YetAnotherProxy.nuspec
 
 .nuget/nuget pack YetAnotherProxy.nuspec
+
+
+add tag:
+git push origin tagName
+git tag -a tagName -m "tagDescription" 2b30ad
+
+delete tag:
+git push --delete origin tagName 
+git tag -d tagName 
