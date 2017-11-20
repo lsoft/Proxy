@@ -1,6 +1,6 @@
 using System;
 
-namespace ProxyNinjectDemostration.ApplicationThings.Logger
+namespace ProxyNinjectDemonstration.ApplicationThings.Logger
 {
     public class ConsoleLogger : IConsoleLogger
     {

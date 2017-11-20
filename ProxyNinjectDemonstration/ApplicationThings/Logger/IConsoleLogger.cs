@@ -1,4 +1,4 @@
-namespace ProxyNinjectDemostration.ApplicationThings.Logger
+namespace ProxyNinjectDemonstration.ApplicationThings.Logger
 {
     public interface IConsoleLogger
     {

@@ -1,7 +1,7 @@
 using System;
 using PerformanceTelemetry;
 
-namespace ProxyNinjectDemostration.ProxyRelated.ErrorLogger
+namespace ProxyNinjectDemonstration.ProxyRelated.ErrorLogger
 {
     public class ConsoleTelemetryLogger : ITelemetryLogger
     {

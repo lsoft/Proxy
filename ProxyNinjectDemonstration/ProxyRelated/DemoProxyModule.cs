@@ -3,10 +3,10 @@ using PerformanceTelemetry.Container.Saver;
 using PerformanceTelemetry.Container.Saver.Item;
 using PerformanceTelemetry.ErrorContext;
 using ProxyGenerator.NInject;
-using ProxyNinjectDemostration.ProxyRelated.ErrorLogger;
-using ProxyNinjectDemostration.ProxyRelated.Saver;
+using ProxyNinjectDemonstration.ProxyRelated.ErrorLogger;
+using ProxyNinjectDemonstration.ProxyRelated.Saver;
 
-namespace ProxyNinjectDemostration.ProxyRelated
+namespace ProxyNinjectDemonstration.ProxyRelated
 {
     public class DemoProxyModule : ProxyModule<EventBasedSaver>
     {

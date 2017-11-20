@@ -2,7 +2,7 @@ using System;
 using PerformanceTelemetry.Container.Saver.Item;
 using PerformanceTelemetry.Record;
 
-namespace ProxyNinjectDemostration.ProxyRelated.Saver
+namespace ProxyNinjectDemonstration.ProxyRelated.Saver
 {
     public class ConsoleSaver : IItemSaver
     {

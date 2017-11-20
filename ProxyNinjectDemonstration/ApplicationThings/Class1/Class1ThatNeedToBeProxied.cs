@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 
-namespace ProxyNinjectDemostration.ApplicationThings.Class1
+namespace ProxyNinjectDemonstration.ApplicationThings.Class1
 {
     public class Class1ThatNeedToBeProxied : IInterface1ThatNeedToBeProxied
     {

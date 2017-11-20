@@ -1,6 +1,6 @@
 using PerformanceTelemetry.Container.Saver.Item;
 
-namespace ProxyNinjectDemostration.ProxyRelated.Saver
+namespace ProxyNinjectDemonstration.ProxyRelated.Saver
 {
     public class ConsoleSaverFactory : IItemSaverFactory
     {

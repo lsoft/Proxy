@@ -1,6 +1,6 @@
 using System;
 
-namespace ProxyNinjectDemostration.ProxyRelated
+namespace ProxyNinjectDemonstration.ProxyRelated
 {
     public class ProxyAttribute : Attribute
     {

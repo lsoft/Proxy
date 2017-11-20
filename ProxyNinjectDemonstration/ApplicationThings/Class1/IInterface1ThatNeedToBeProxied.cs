@@ -1,6 +1,6 @@
-using ProxyNinjectDemostration.ProxyRelated;
+using ProxyNinjectDemonstration.ProxyRelated;
 
-namespace ProxyNinjectDemostration.ApplicationThings.Class1
+namespace ProxyNinjectDemonstration.ApplicationThings.Class1
 {
     public interface IInterface1ThatNeedToBeProxied
     {

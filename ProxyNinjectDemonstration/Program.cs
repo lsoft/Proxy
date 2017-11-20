@@ -1,12 +1,12 @@
 ﻿using System;
 using Ninject;
 using ProxyGenerator.NInject;
-using ProxyNinjectDemostration.ApplicationThings;
-using ProxyNinjectDemostration.ApplicationThings.Class1;
-using ProxyNinjectDemostration.ApplicationThings.Logger;
-using ProxyNinjectDemostration.ProxyRelated;
+using ProxyNinjectDemonstration.ApplicationThings;
+using ProxyNinjectDemonstration.ApplicationThings.Class1;
+using ProxyNinjectDemonstration.ApplicationThings.Logger;
+using ProxyNinjectDemonstration.ProxyRelated;
 
-namespace ProxyNinjectDemostration
+namespace ProxyNinjectDemonstration
 {
     class Program
     {
