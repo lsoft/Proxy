@@ -13,6 +13,8 @@ As Ninject extension
 Runtime code generation proxy. Useful telemetry for your C# application.
 It easily binds with [Ninject](https://github.com/ninject), but not require it, and is able to store telemetry to SQL Server, binary files or others containers.
 
+## Proxy
+
 ```C#
 public interface IInterface1ThatNeedToBeProxied
 {
@@ -47,4 +49,8 @@ var proxiedObject = kernel.Get<IInterface1ThatNeedToBeProxied>();
 ```
 
 
-and use it instead of Class1ThatNeedToBeProxied.
+and use it instead of Class1ThatNeedToBeProxied. For example usage (in Ninject scope, or not) please refer to 2 demo projects.
+
+## Payload
+
+Default payload stores a class name, method name, start time, execution time span, and execution exception if raised. Also default payload combines profiling events in stack order for each execution thread.
