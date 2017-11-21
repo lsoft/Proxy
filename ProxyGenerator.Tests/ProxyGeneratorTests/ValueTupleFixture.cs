@@ -5,7 +5,7 @@ using ProxyGenerator.Generator;
 
 namespace ProxyGenerator.Tests.ProxyGeneratorTests
 {
-#if NET47
+#if VALUETUPLE
     [TestClass]
     public class ValueTupleFixture
     {
@@ -24,10 +24,19 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
 
             Assert.IsNotNull(proxy);
 
-            var (i, s) = proxy.Get();
+            (int x0, string x1, int x2, string x3, int x4, string x5, int x6, string x7, int x8, string x9, int x10) = proxy.Get();
 
-            Assert.AreEqual(12, i);
-            Assert.AreEqual("123", s);
+            Assert.AreEqual(0, x0);
+            Assert.AreEqual("1", x1);
+            Assert.AreEqual(2, x2);
+            Assert.AreEqual("3", x3);
+            Assert.AreEqual(4, x4);
+            Assert.AreEqual("5", x5);
+            Assert.AreEqual(6, x6);
+            Assert.AreEqual("7", x7);
+            Assert.AreEqual(8, x8);
+            Assert.AreEqual("9", x9);
+            Assert.AreEqual(10, x10);
         }
 
         [TestMethod]
@@ -132,14 +141,14 @@ namespace ProxyGenerator.Tests.ProxyGeneratorTests
         public interface IValueTupleMock
         {
             [TestWrapWithProxy]
-            (int, string) Get();
+            (int x0, string x1, int x2, string x3, int x4, string x5, int x6, string x7, int x8, string x9, int x10) Get();
         }
 
         public class ValueTupleMock : IValueTupleMock
         {
-            public (int, string) Get()
+            public (int x0, string x1, int x2, string x3, int x4, string x5, int x6, string x7, int x8, string x9, int x10) Get()
             {
-                return (12, "123");
+                return (0, "1", 2, "3", 4, "5", 6, "7", 8, "9", 10);
             }
         }
 

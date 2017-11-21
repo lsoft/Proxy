@@ -45,10 +45,11 @@ namespace ProxyGenerator.Wrapper.Method
             var argTypeAndNameString = SourceHelper.GetArgumentTypeAndNameList(null, piList);
             var argNameString = SourceHelper.GetArgumentNameList(piList);
 
-            var retType = _method.ReturnType;
+            var retParameter = _method.ReturnParameter;
+            var retType = retParameter.ParameterType;//_method.ReturnType;
             var retTypeName =
                 retType != typeof(void)
-                    ? SourceHelper.ParameterTypeConverter(retType)
+                    ? SourceHelper.ParameterTypeConverter(retParameter)
                     : "void";
             var notVoid = retType != typeof(void);
 

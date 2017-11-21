@@ -1,9 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net461;net4.7</TargetFrameworks> <!-- netcoreapp2.0 -->
+    <TargetFrameworks>net461;net4.7;netcoreapp2.0</TargetFrameworks> <!-- netcoreapp2.0 -->
 
     <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'netcoreapp2.0' ">
+    <DefineConstants>$(DefineConstants);WMI</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,7 +23,7 @@
     <ProjectReference Include="..\PerformanceTelemetry\PerformanceTelemetry.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'netcoreapp2.0' ">
     <Reference Include="System.Management" />
   </ItemGroup>
 

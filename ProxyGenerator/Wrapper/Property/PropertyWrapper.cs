@@ -109,7 +109,7 @@ namespace ProxyGenerator.Wrapper.Property
             var propType = this.PropertyType;
             var propTypeName = 
                 propType != typeof(void)
-                    ? SourceHelper.ParameterTypeConverter(propType)
+                    ? SourceHelper.ParameterTypeConverter2(propType)
                     : "void"
                 ;
 

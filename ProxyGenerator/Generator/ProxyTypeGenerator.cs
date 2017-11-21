@@ -3,6 +3,7 @@ using System.CodeDom.Compiler;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -12,6 +13,11 @@ using ProxyGenerator.Wrapper.Constructor;
 using ProxyGenerator.Wrapper.Event;
 using ProxyGenerator.Wrapper.Method;
 using ProxyGenerator.Wrapper.Property;
+
+#if NETSTANDARD
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+#endif
 
 namespace ProxyGenerator.Generator
 {
@@ -46,8 +52,8 @@ namespace ProxyGenerator.Generator
         public Type CreateProxyType<TInterface, TClass>(
             Parameters p
             )
-                where TInterface : class
-                where TClass : class
+            where TInterface : class
+            where TClass : class
         {
             if (p == null)
             {
@@ -252,7 +258,7 @@ namespace ProxyGenerator.Generator
             foreach (var ii in allIntefaces)
             {
                 var timList = new List<MethodInfo>();
-                
+
                 ExtractAllMethodsFromInterface(
                     ii,
                     timList
@@ -350,10 +356,209 @@ namespace ProxyGenerator.Generator
 
             #endregion
 
+            var compiledAssembly = Compile(
+                p, 
+                tc, 
+                ti, 
+                sources
+                );
+
+            _compiledAssemblyContainer.Add(compiledAssembly);
+
+            var type = compiledAssembly.GetTypes()[0];
+
+            return type;
+        }
+
+#if NETSTANDARD
+        private Assembly Compile(
+            Parameters p,
+            Type tc,
+            Type ti,
+            string sources
+            )
+        {
+            SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(sources);
+
+            var references = new List<MetadataReference>();
+
+            var assemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
+
+            references.Add(MetadataReference.CreateFromFile(typeof(object).Assembly.Location));
+            references.Add(MetadataReference.CreateFromFile(typeof(Console).Assembly.Location));
+            references.Add(MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "mscorlib.dll")));
+            references.Add(MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.dll")));
+            references.Add(MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.Core.dll")));
+            references.Add(MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.Runtime.dll")));
+
+            foreach (var usingAssembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                #region skip dynamic assemblies
+
+                if (usingAssembly.IsDynamic)
+                {
+                    continue;
+                }
+
+                #endregion
+
+                #region skip previously generated proxy assemblies
+
+                if (_compiledAssemblyContainer.IsExists(usingAssembly))
+                {
+                    continue;
+                }
+
+                #endregion
+
+                if (!string.IsNullOrEmpty(usingAssembly.Location))
+                {
+                    references.Add(MetadataReference.CreateFromFile(usingAssembly.Location));
+                }
+            }
+
+            //добавляем сборку фактори
+            references.Add(MetadataReference.CreateFromFile(p.ProxyPayloadFactory.GetType().Assembly.Location));
+
+            //добавляем сборку интерфейса
+            references.Add(MetadataReference.CreateFromFile(ti.Assembly.Location));
+
+            //добавляем сборку класса
+            references.Add(MetadataReference.CreateFromFile(tc.Assembly.Location));
+
+            //добавляем добавочные сборки
+            if (p.AdditionalReferencedAssembliesLocation != null)
+            {
+                foreach (var aral in p.AdditionalReferencedAssembliesLocation)
+                {
+                    references.Add(MetadataReference.CreateFromFile(aral));
+                }
+            }
+
+            string assemblyName = Path.GetRandomFileName();
+            CSharpCompilation compilation = CSharpCompilation.Create(
+                assemblyName,
+                syntaxTrees: new[] { syntaxTree },
+                references: references,
+                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                );
+
+            Assembly assembly;
+            using (var ms = new MemoryStream())
+            {
+                var compilerResults = compilation.Emit(ms);
+
+                if (!compilerResults.Success)
+                {
+                    IEnumerable<Diagnostic> failures = compilerResults.Diagnostics.Where(diagnostic =>
+                        diagnostic.IsWarningAsError ||
+                        diagnostic.Severity == DiagnosticSeverity.Error
+                        );
+
+                    throw new Exception(
+                        failures.Aggregate(
+                            "", (text, error) => text + error.Location + ": " + error.GetMessage() + "\r\n"));
+                }
+
+                ms.Seek(0, SeekOrigin.Begin);
+                assembly = Assembly.Load(ms.ToArray());
+            }
+
+            return
+                assembly;
+
+        }
+//#elif NET47
+//        private Assembly Compile(
+//            Parameters p,
+//            Type tc,
+//            Type ti,
+//            string sources
+//            )
+//        {
+//            Assembly compiledAssembly;
+//            using (var compiler = new Microsoft.CodeDom.Providers.DotNetCompilerPlatform.CSharpCodeProvider(
+//                //new Dictionary<String, String> { { "CompilerVersion", "v4.0" } }
+//                )
+//            )
+//            {
+//                var compilerParameters = new CompilerParameters();
+
+//                foreach (var usingAssembly in AppDomain.CurrentDomain.GetAssemblies())
+//                {
+//                    #region skip dynamic assemblies
+
+//                    if (usingAssembly.IsDynamic)
+//                    {
+//                        continue;
+//                    }
+
+//                    #endregion
+
+//                    #region skip previously generated proxy assemblies
+
+//                    if (_compiledAssemblyContainer.IsExists(usingAssembly))
+//                    {
+//                        continue;
+//                    }
+
+//                    #endregion
+
+//                    if (!string.IsNullOrEmpty(usingAssembly.Location))
+//                    {
+//                        compilerParameters.ReferencedAssemblies.Add(usingAssembly.Location);
+//                    }
+//                }
+
+//                //добавляем сборку фактори
+//                compilerParameters.ReferencedAssemblies.Add(p.ProxyPayloadFactory.GetType().Assembly.Location);
+
+//                //добавляем сборку интерфейса
+//                compilerParameters.ReferencedAssemblies.Add(ti.Assembly.Location);
+
+//                //добавляем сборку класса
+//                compilerParameters.ReferencedAssemblies.Add(tc.Assembly.Location);
+
+//                //добавляем добавочные сборки
+//                if (p.AdditionalReferencedAssembliesLocation != null)
+//                {
+//                    foreach (var aral in p.AdditionalReferencedAssembliesLocation)
+//                    {
+//                        compilerParameters.ReferencedAssemblies.Add(aral);
+//                    }
+//                }
+
+//                compilerParameters.GenerateInMemory = true;
+
+//                if (!string.IsNullOrEmpty(p.GeneratedAssemblyName))
+//                {
+//                    compilerParameters.OutputAssembly = p.GeneratedAssemblyName;
+//                }
+
+//                var compilerResults = compiler.CompileAssemblyFromSource(compilerParameters, sources);
+
+//                if (compilerResults.Errors.HasErrors)
+//                {
+//                    throw new Exception(
+//                        compilerResults.Errors.Cast<CompilerError>().Aggregate(
+//                            "", (text, error) => text + error.Line + ": " + error.ErrorText + "\r\n"));
+//                }
+
+//                compiledAssembly = compilerResults.CompiledAssembly;
+//            }
+
+//            return compiledAssembly;
+//        }
+//#elif NET461
+#else
+        private Assembly Compile(
+            Parameters p,
+            Type tc,
+            Type ti,
+            string sources
+            )
+        {
             Assembly compiledAssembly;
-
-            #region compile with .NET 4.0 into compiledAssembly
-
             using (var compiler = new CSharpCodeProvider(new Dictionary<String, String> { { "CompilerVersion", "v4.0" } }))
             {
                 var compilerParameters = new CompilerParameters();
@@ -418,14 +623,10 @@ namespace ProxyGenerator.Generator
                 compiledAssembly = compilerResults.CompiledAssembly;
             }
 
-            #endregion
-
-            _compiledAssemblyContainer.Add(compiledAssembly);
-
-            var type = compiledAssembly.GetTypes()[0];
-
-            return type;
+            return compiledAssembly;
         }
+#endif
+
 
         private static void ExtractAllEventsFromInterfaceHierarchy(
             Type ti,
@@ -504,13 +705,13 @@ namespace ProxyGenerator.Proxies
 
         {_ConstructorList_}
 
-        #region Implementation of interfaces
+#region Implementation of interfaces
    
         {_PropertiesList_}
 
         {_MethodList_}
 
-        #endregion
+#endregion
     }
 }
 ";

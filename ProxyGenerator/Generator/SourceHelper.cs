@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace ProxyGenerator.Generator
 {
@@ -144,7 +146,7 @@ namespace ProxyGenerator.Generator
                     j => string.Format(
                         "{0} {1} {2}",
                         ParameterModifierConverter(j),
-                        ParameterTypeConverter(j.ParameterType),
+                        ParameterTypeConverter(j),
                         j.Name));
 
             if (!string.IsNullOrEmpty(fixedParameter))
@@ -157,7 +159,39 @@ namespace ProxyGenerator.Generator
             return result;
         }
 
-        public static string ParameterTypeConverter(Type parameterType)
+        public static string ParameterTypeConverter(ParameterInfo parameterInfo)
+        {
+            var parameterType = parameterInfo.ParameterType;
+
+            string result;
+#if VALUETUPLE_NATIVESYNTAX
+            if (ValueTupleHelper.IsValueTuple(parameterType))
+            {
+                var tupleElementTypes = ValueTupleHelper.ParseTupleArguments(parameterType);
+
+                var argattr = parameterInfo.GetCustomAttribute<TupleElementNamesAttribute>();
+                var tupleElementNames = argattr.TransformNames.Where(j => !string.IsNullOrEmpty(j)).ToList();
+
+                var pairs = tupleElementTypes.Zip(
+                    tupleElementNames,
+                    (t, en) => string.Format("{0} {1}", ParameterTypeConverter2(t), en)
+                    );
+
+                result = string.Format(
+                    "({0})",
+                    string.Join(", ", pairs)
+                    );
+            }
+            else
+#endif
+            {
+                result = ParameterTypeConverter2(parameterType);
+            }
+
+            return result;
+        }
+
+        public static string ParameterTypeConverter2(Type parameterType)
         {
             string result;
 
@@ -168,7 +202,7 @@ namespace ProxyGenerator.Generator
                     parameterType
                         .GetGenericArguments()
                         .ToList()
-                        .ConvertAll(j => ParameterTypeConverter(j))
+                        .ConvertAll(j => ParameterTypeConverter2(j))
                         .ToArray());
 
                 var ppp = ParameterTypeStringConverter(parameterType.ToString());
@@ -181,9 +215,9 @@ namespace ProxyGenerator.Generator
                 result = ParameterTypeStringConverter(parameterType.ToString());
             }
 
-            return result;
+            return
+                result;
         }
-
 
         public static string FullNameConverter(string fullname)
         {

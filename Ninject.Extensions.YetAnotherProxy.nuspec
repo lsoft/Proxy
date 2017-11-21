@@ -10,7 +10,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Runtime code generation proxy. Useful telemetry for your C# application. It easily binds with Ninject, but not require it, and is able to store telemetry to SQL Server, binary files or others containers.</description>
     <copyright>Copyright (c) ls 2017</copyright>
-    <!--  <releaseNotes>Added support .Net 4.7.</releaseNotes> -->
+    <releaseNotes>Added support .Net Standard 2.0.</releaseNotes>
     <tags>runtime proxy</tags>
     <dependencies>
       <dependency id="Ninject" version="3.3.3" />
@@ -18,13 +18,18 @@
     </dependencies>
   </metadata>
   <files>
+
     <file src="ProxyGenerator\bin\Release\net461\ProxyGenerator.dll" target="lib\net461\ProxyGenerator.dll" />
     <file src="ProxyGenerator\bin\Release\net4.7\ProxyGenerator.dll" target="lib\net4.7\ProxyGenerator.dll" />
+    <file src="ProxyGenerator\bin\Release\netstandard2.0\ProxyGenerator.dll" target="lib\netstandard2.0\ProxyGenerator.dll" />
 
     <file src="PerformanceTelemetry\bin\Release\net461\PerformanceTelemetry.dll" target="lib\net461\PerformanceTelemetry.dll" />
     <file src="PerformanceTelemetry\bin\Release\net4.7\PerformanceTelemetry.dll" target="lib\net4.7\PerformanceTelemetry.dll" />
+    <file src="PerformanceTelemetry\bin\Release\netstandard2.0\PerformanceTelemetry.dll" target="lib\netstandard2.0\PerformanceTelemetry.dll" />
 
     <file src="ProxyGenerator.NInject\bin\Release\net461\ProxyGenerator.NInject.dll" target="lib\net461\ProxyGenerator.NInject.dll" />
     <file src="ProxyGenerator.NInject\bin\Release\net4.7\ProxyGenerator.NInject.dll" target="lib\net4.7\ProxyGenerator.NInject.dll" />
+    <file src="ProxyGenerator.NInject\bin\Release\netstandard2.0\ProxyGenerator.NInject.dll" target="lib\netstandard2.0\ProxyGenerator.NInject.dll" />
+
    </files>
 </package>

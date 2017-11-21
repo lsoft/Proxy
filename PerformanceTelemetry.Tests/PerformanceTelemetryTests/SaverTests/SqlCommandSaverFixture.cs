@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if SQL_SERVER_EXISTS
+using System;
 using System.CodeDom;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -15,6 +16,7 @@ using PerformanceTelemetry.Container.Saver.Item.Sql.SqlCommand;
 using PerformanceTelemetry.Record;
 using PerformanceTelemetry.Tests.DB.DB;
 using PerformanceTelemetry.Tests.DB.Servicing;
+#endif 
 
 namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
 {

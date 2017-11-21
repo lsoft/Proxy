@@ -1,9 +1,14 @@
+#if WMI
 using System;
 using System.Collections.Generic;
 using System.Management;
+#endif
+
+using System.Collections.Generic;
 
 namespace PerformanceTelemetry.Tests.DB.InstanceProvider
 {
+#if WMI
     public class WmiSqlServerInstanceProvider : ISqlServerInstanceProvider
     {
         /// <summary>
@@ -169,4 +174,14 @@ namespace PerformanceTelemetry.Tests.DB.InstanceProvider
                 propertyValue;
         }
     }
+#else
+    public class WmiSqlServerInstanceProvider : ISqlServerInstanceProvider
+    {
+        public List<SqlServerInstanceInformation> EnumerateSqlInstances()
+        {
+            return
+                new List<SqlServerInstanceInformation>();
+        }
+    }
+#endif
 }
