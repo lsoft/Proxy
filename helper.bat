@@ -9,14 +9,15 @@ dotnet test ProxyGenerator.Tests.csproj --framework netcoreapp2.0
 dotnet test ProxyGenerator.Tests.csproj --framework net4.7 --filter "FullyQualifiedName~ValueTuple"
 
 nuget packing:
-.nuget/nuget pack Ninject.Extensions.YetAnotherProxy.nuspec
-.nuget/nuget pack YetAnotherProxy.nuspec
+nuget pack Ninject.Extensions.YetAnotherProxy.nuspec
+nuget pack YetAnotherProxy.nuspec
 
 add tag:
+git log --pretty=oneline
+git tag -a tagName -m "tagDescription" commithash
 git push origin tagName
-git tag -a tagName -m "tagDescription" 2b30ad_xxx
+
 
 delete tag:
 git push --delete origin tagName 
 git tag -d tagName 
-
