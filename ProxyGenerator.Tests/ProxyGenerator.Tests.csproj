@@ -1,13 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.0;net461;net4.7</TargetFrameworks> <!-- netcoreapp2.0 -->
+    <TargetFrameworks>net45;net461;net4.7;netcoreapp2.0</TargetFrameworks> <!-- netcoreapp2.0 -->
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">
+    <DefineConstants>$(DefineConstants);NET45</DefineConstants>
+  </PropertyGroup>
+
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net461' ">
-    <DefineConstants>$(DefineConstants);NET416</DefineConstants>
+    <DefineConstants>$(DefineConstants);NET461</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net4.7' ">
