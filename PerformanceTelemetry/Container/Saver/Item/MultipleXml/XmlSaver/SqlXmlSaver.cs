@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data.SqlClient;
 using System.Text;
+using System.Threading;
 
 namespace PerformanceTelemetry.Container.Saver.Item.MultipleXml.XmlSaver
 {
@@ -14,8 +15,18 @@ namespace PerformanceTelemetry.Container.Saver.Item.MultipleXml.XmlSaver
 
         public SqlXmlSaver(
             string connectionString,
-            string tableName)
+            string tableName
+            )
         {
+            if (connectionString == null)
+            {
+                throw new ArgumentNullException(nameof(connectionString));
+            }
+            if (tableName == null)
+            {
+                throw new ArgumentNullException(nameof(tableName));
+            }
+
             _connection = new SqlConnection(connectionString);
             _tableName = tableName;
 
@@ -43,6 +54,15 @@ namespace PerformanceTelemetry.Container.Saver.Item.MultipleXml.XmlSaver
         }
 
         #endregion
+
+        public void Dispose()
+        {
+            var connection = Interlocked.Exchange(ref this._connection, null);
+            if (connection != null)
+            {
+                connection.Dispose();
+            }
+        }
 
         private void ClearOldEntries()
         {
@@ -143,14 +163,6 @@ END
 
 END
 ";
-        public void Dispose()
-        {
-            if (this._connection != null)
-            {
-                this._connection.Dispose();
-                this._connection = null;
-            }
-        }
     }
 }
 

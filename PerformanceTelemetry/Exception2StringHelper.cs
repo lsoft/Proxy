@@ -5,7 +5,7 @@ using System.Text;
 
 namespace PerformanceTelemetry
 {
-    internal class Exception2StringHelper
+    public class Exception2StringHelper
     {
         public static string ToFullString(
             Exception excp

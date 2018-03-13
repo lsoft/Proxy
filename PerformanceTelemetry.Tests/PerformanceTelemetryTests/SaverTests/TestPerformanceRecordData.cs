@@ -2,14 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data.SqlClient;
+using System.Linq;
+using PerformanceTelemetry.Container.Saver.Item.Binary;
+using PerformanceTelemetry.IterateHelper;
 using PerformanceTelemetry.Record;
 
 namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
 {
-#if SQL_SERVER_EXISTS
     internal class TestPerformanceRecordData : IPerformanceRecordData
     {
-        private readonly List<IPerformanceRecordData> _children;
+        private readonly List<TestPerformanceRecordData> _children;
 
         public string ClassName
         {
@@ -61,7 +63,7 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
             TimeInterval = timeInterval;
             CreationStack = creationStack;
 
-            _children = new List<IPerformanceRecordData>();
+            _children = new List<TestPerformanceRecordData>();
         }
 
         public TestPerformanceRecordData(string className, string methodName, DateTime startTime, double timeInterval, string creationStack, Exception exception)
@@ -73,20 +75,20 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
             CreationStack = creationStack;
             Exception = exception;
 
-            _children = new List<IPerformanceRecordData>();
+            _children = new List<TestPerformanceRecordData>();
         }
 
-        public TestPerformanceRecordData(string className, string methodName, DateTime startTime, double timeInterval, string creationStack, List<IPerformanceRecordData> children)
+        public TestPerformanceRecordData(string className, string methodName, DateTime startTime, double timeInterval, string creationStack, params TestPerformanceRecordData[] children)
         {
             ClassName = className;
             MethodName = methodName;
             StartTime = new DateTime(startTime.Year, startTime.Month, startTime.Day, startTime.Hour, startTime.Minute, startTime.Second); //внутри СБД время округлится, если будут миллисекунды; и тест провалится!
             TimeInterval = timeInterval;
             CreationStack = creationStack;
-            _children = children;
+            _children = children.ToList();
         }
 
-        public TestPerformanceRecordData(string className, string methodName, DateTime startTime, double timeInterval, string creationStack,  Exception exception, List<IPerformanceRecordData> children)
+        public TestPerformanceRecordData(string className, string methodName, DateTime startTime, double timeInterval, string creationStack,  Exception exception, params TestPerformanceRecordData[] children)
         {
             ClassName = className;
             MethodName = methodName;
@@ -94,10 +96,106 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
             TimeInterval = timeInterval;
             CreationStack = creationStack;
             Exception = exception;
-            _children = children;
+            _children = children.ToList();
         }
 
-        public bool CheckEqualityFor(
+        internal bool CheckEqualityFor(
+            DiskPerformanceRecord record
+            )
+        {
+            if (record == null)
+            {
+                throw new ArgumentNullException(nameof(record));
+            }
+
+            if(string.Compare(this.ClassName, record.ClassName, StringComparison.InvariantCulture) != 0)
+            {
+                return false;
+            }
+
+            if (string.Compare(this.MethodName, record.MethodName, StringComparison.InvariantCulture) != 0)
+            {
+                return false;
+            }
+
+            if (this.StartTime.Ticks != record.StartTime.Ticks)
+            {
+                return false;
+            }
+
+            if (Math.Abs(this.TimeInterval - record.TimeInterval) >= double.Epsilon)
+            {
+                return false;
+            }
+
+            if (string.Compare(this.CreationStack, record.CreationStack, StringComparison.InvariantCulture) != 0)
+            {
+                return false;
+            }
+
+            if (this.Exception == null && record.ExceptionExists)
+            {
+                return false;
+            }
+
+            if (this.Exception != null && !record.ExceptionExists)
+            {
+                return false;
+            }
+
+            if (this.Exception == null && !record.ExceptionExists)
+            {
+                //all fields are equals
+                //no more fields to compare because exception does not present
+
+                return true; 
+            }
+
+            var message = this.Exception.Message ?? string.Empty;
+
+            if (string.Compare(message, record.ExceptionMessage, StringComparison.InvariantCulture) != 0)
+            {
+                return false;
+            }
+
+            var stackTrace = this.Exception.StackTrace ?? string.Empty;
+
+            if (string.Compare(stackTrace, record.ExceptionStackTrace, StringComparison.InvariantCulture) != 0)
+            {
+                return false;
+            }
+
+            var fullException = Exception2StringHelper.ToFullString(this.Exception) ?? string.Empty;
+
+            if (string.Compare(fullException, record.FullException, StringComparison.InvariantCulture) != 0)
+            {
+                return false;
+            }
+
+            if (this._children.Count != record.Children.Count)
+            {
+                return false;
+            }
+            
+            foreach (var pair in this._children.ZipEqualLength(record.Children))
+            {
+                var eq = pair.Value1.CheckEqualityFor(pair.Value2);
+
+                if (!eq)
+                {
+                    return false;
+                }
+            }
+
+
+            //all fields are equals
+
+            return
+                true;
+        }
+
+#if SQL_SERVER_EXISTS
+        internal bool CheckEqualityFor(
             long correctParentId,
             SqlDataReader reader
             )
@@ -133,6 +231,6 @@ namespace PerformanceTelemetry.Tests.PerformanceTelemetryTests.SaverTests
             return
                 result;
         }
-    }
 #endif
+    }
 }

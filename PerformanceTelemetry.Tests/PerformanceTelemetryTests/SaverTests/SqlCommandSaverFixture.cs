@@ -365,11 +365,9 @@ order by
                 DateTime.Now,
                 100,
                 StringGenerator.GetString("CreationStack"),
-                new List<IPerformanceRecordData>
-                {
-                    child0,
-                    child1
-                }
+
+                child0,
+                child1
                 );
 
             var dataExists0 = false;

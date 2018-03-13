@@ -40,7 +40,7 @@ namespace PerformanceTelemetry.Record
         }
 
         /// <summary>
-        /// It constructs children collection by any request, so do not call this method extensively.
+        /// It constructs children collection by each request, so do not call this method extensively.
         /// </summary>
         /// <returns>Children collection</returns>
         List<IPerformanceRecordData> GetChildren();
